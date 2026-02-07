@@ -29,12 +29,6 @@
             color: #fff;
         }
 
-        .metric-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
         .glass-detail {
             animation: fadeIn 0.4s ease-out;
         }
@@ -63,6 +57,65 @@
             background: #f9fafb;
             border-color: #000;
         }
+
+        /* Corrigindo e aprimorando Tooltips */
+        .tooltip-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: help;
+        }
+
+        .tooltip-content {
+            visibility: hidden;
+            width: 300px;
+            background-color: #1a1a1a;
+            color: #fff;
+            text-align: left;
+            padding: 16px;
+            position: absolute;
+            z-index: 100;
+            bottom: 140%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            font-size: 11px;
+            line-height: 1.6;
+            font-weight: normal;
+            text-transform: none;
+            letter-spacing: normal;
+            pointer-events: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            white-space: pre-wrap; /* Mantém quebras de linha */
+            border: 1px solid #333;
+        }
+
+        .tooltip-container:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(-50%) translateY(-5px);
+        }
+
+        .tooltip-content::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 8px;
+            border-style: solid;
+            border-color: #1a1a1a transparent transparent transparent;
+        }
+
+        /* Harm Reduction Reveal Transition */
+        .reveal-container .overlay {
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .reveal-container:hover .overlay {
+            opacity: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden bg-gray-50">
@@ -70,7 +123,10 @@
     <!-- SIDEBAR: HISTÓRICO -->
     <aside class="w-64 md:w-80 bg-white border-r border-gray-200 flex flex-col h-full shrink-0">
         <div class="p-6 border-b border-gray-100 flex justify-between items-center">
-            <h1 class="font-extrabold text-xl tracking-tighter uppercase">Diário TDAH</h1>
+            <h1 class="font-extrabold text-xl tracking-tighter uppercase flex items-center gap-2">
+                <i data-lucide="clipboard-list" class="w-5 h-5 text-red-600"></i>
+                Diário TDAH
+            </h1>
             <button onclick="fetchData()" class="p-2 hover:bg-gray-100 rounded-full transition-colors" title="Sincronizar Planilha">
                 <i data-lucide="refresh-cw" class="w-4 h-4 text-gray-400"></i>
             </button>
@@ -81,26 +137,41 @@
         </nav>
 
         <div class="p-4 bg-gray-50 border-t border-gray-200 text-[10px] font-mono text-gray-400 uppercase tracking-widest text-center">
-            v2.2 Swiss Minimalist
+            v2.6 Swiss Minimalist + Tooltips Fix
         </div>
     </aside>
 
     <!-- MAIN CONTENT: DETALHES -->
-    <main class="flex-1 overflow-y-auto bg-white flex flex-col">
+    <main class="flex-1 overflow-y-auto bg-white flex flex-col relative">
         <!-- TOP TOOLBAR -->
-        <div class="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-100 px-8 py-4 flex justify-end gap-2">
-            <button onclick="exportJSON()" class="btn-tool">
-                <i data-lucide="download" class="w-3 h-3 text-blue-600"></i> Exportar Tudo (JSON)
-            </button>
-            <label class="btn-tool cursor-pointer">
-                <i data-lucide="upload" class="w-3 h-3 text-green-600"></i> Importar (JSON)
-                <input type="file" id="importJson" accept=".json" class="hidden" onchange="importJSON(event)">
-            </label>
-            <div id="day-actions" class="hidden flex gap-2">
-                <div class="w-[1px] h-full bg-gray-200 mx-2"></div>
-                <button onclick="exportMarkdown()" class="btn-tool bg-black text-white border-black hover:bg-gray-800">
-                    <i data-lucide="file-text" class="w-3 h-3"></i> Exportar Dia (.MD)
+        <div class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-100 px-8 py-4 flex justify-between items-center">
+            <div id="priority-hint" class="hidden text-[9px] font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                <div class="tooltip-container">
+                    <i data-lucide="info" class="w-3 h-3 text-red-600"></i>
+                    <div class="tooltip-content"><strong>🧭 PRIORIDADE DE OBSERVAÇÃO</strong>
+Se estiver cansado, observe apenas:
+• Ruído mental
+• Clareza
+• Foco
+• Pico claro
+O resto é contexto.</div>
+                </div>
+                Prioridade: Ruído, Clareza, Foco e Pico.
+            </div>
+            <div class="flex gap-2 ml-auto">
+                <button onclick="exportJSON()" class="btn-tool">
+                    <i data-lucide="download" class="w-3 h-3 text-blue-600"></i> Exportar Tudo
                 </button>
+                <label class="btn-tool cursor-pointer">
+                    <i data-lucide="upload" class="w-3 h-3 text-green-600"></i> Importar
+                    <input type="file" id="importJson" accept=".json" class="hidden" onchange="importJSON(event)">
+                </label>
+                <div id="day-actions" class="hidden flex gap-2">
+                    <div class="w-[1px] h-full bg-gray-200 mx-2"></div>
+                    <button onclick="exportMarkdown()" class="btn-tool bg-black text-white border-black hover:bg-gray-800">
+                        <i data-lucide="file-text" class="w-3 h-3"></i> Exportar Dia (.MD)
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -119,6 +190,109 @@
 
         const COLORS = {
             0: '#850000', 1: '#C00000', 2: '#FF8C00', 3: '#D4FF00', 4: '#4ADE80', 5: '#1D4ED8'
+        };
+
+        const TOOLTIPS = {
+            ruido: `🧠 RUÍDO MENTAL (0–5)
+O que observar: quantidade de pensamentos simultâneos.
+☐ Um pensamento por vez
+☐ Pensamentos se interrompem
+☐ Ideias competem entre si
+
+Escala:
+0–1: mente silenciosa ou linear
+2–3: alguns pensamentos paralelos
+4–5: atropelo constante de pensamentos
+📌 Ruído diminui sem acelerar.`,
+
+            clareza: `🧩 CLAREZA MENTAL (0–5)
+O que observar: nitidez para entender e decidir.
+☐ Entendo o que estou fazendo
+☐ Menos confusão interna
+☐ Decisões mais diretas
+
+Escala:
+0–1: confusão, névoa
+2–3: clareza com esforço
+4–5: clareza espontânea
+📌 Clareza ≠ energia.`,
+
+            cansaco: `💪 CANSAÇO FÍSICO (0–5)
+O que observar: estado do corpo.
+☐ Corpo pesado
+☐ Olhos ardendo
+☐ Lentidão física
+
+Escala:
+0–1: corpo leve
+2–3: cansaço tolerável
+4–5: corpo arrastado
+📌 Estimulante pode mascarar — observe cedo.`,
+
+            euforia: `⚡ EUFORIA
+O que observar: elevação artificial de humor.
+☐ Otimismo exagerado
+☐ Empolgação fora do padrão
+☐ Sensação de “tudo resolve”
+
+Marcação:
+☐ Não | ☐ Leve | ☐ Moderada | ☐ Intensa
+📌 Euforia não é resposta terapêutica.`,
+
+            ansiedade: `😰 ANSIEDADE
+O que observar: ativação + desconforto.
+☐ Tensão corporal
+☐ Pressa mental
+☐ Inquietação
+
+Marcação:
+☐ Não | ☐ Leve | ☐ Moderada | ☐ Intensa
+📌 Ansiedade vem com urgência, não clareza.`,
+
+            foco: `🎯 FOCO
+O que observar: sustentação da atenção.
+☐ Consigo ficar numa tarefa
+☐ Saio da tarefa sem travar
+☐ Não fico hiperfixado
+
+Marcação:
+☐ Mais contínuo
+☐ Mais rígido
+☐ Igual ao habitual
+📌 Foco terapêutico é flexível.`,
+
+            pico: `📈 PICO CLARO
+O que observar: início perceptível do efeito.
+☐ “Bateu” claramente
+☐ Mudança abrupta
+☐ Transição nítida
+
+Marcação:
+☐ Sim | ☐ Não
+📌 Idealmente, não há pico claro.`,
+
+            irritabilidade: `😠 IRRITABILIDADE (fim do dia)
+O que observar: tolerância emocional.
+☐ Sons incomodam mais
+☐ Pessoas irritam fácil
+
+Marcação: ☐ Sim | ☐ Não`,
+
+            queda: `🔻 QUEDA DE ENERGIA
+O que observar: esvaziamento abrupto.
+☐ Cansaço súbito
+☐ Humor despenca
+
+Marcação: ☐ Sim | ☐ Não`,
+
+            sono: `🌙 SONO ESPERADO
+O que observar: previsão honesta.
+☐ Corpo pede descanso
+☐ Mente desacelera
+
+Marcação:
+☐ Melhor | ☐ Igual | ☐ Pior
+📌 É prognóstico, não desejo.`
         };
 
         function isPositive(val) {
@@ -186,7 +360,10 @@
                          class="px-6 py-5 border-b border-gray-50 cursor-pointer transition-all hover:bg-gray-50 flex items-center justify-between group ${isActive ? 'active-day' : ''}">
                         <div>
                             <p class="text-[10px] font-bold uppercase tracking-widest ${isActive ? 'text-gray-400' : 'text-gray-400'}">${day['Data']}</p>
-                            <p class="font-bold text-sm">${day['Dose'] || 'N/A'}</p>
+                            <p class="font-bold text-sm flex items-center gap-1">
+                                <i data-lucide="pill" class="w-3 h-3 ${isActive ? 'text-red-400' : 'text-red-600'}"></i>
+                                ${day['Dose'] || 'N/A'}
+                            </p>
                         </div>
                         <div class="flex space-x-1">
                             <div class="w-1.5 h-6 rounded-full" style="background-color: ${getColor(day['Ruído mental (0–5)'])}"></div>
@@ -201,6 +378,7 @@
         window.selectDay = (index) => {
             activeIdx = index;
             document.getElementById('day-actions').classList.remove('hidden');
+            document.getElementById('priority-hint').classList.remove('hidden');
             renderHistory();
             renderDetail(appData[index]);
         };
@@ -213,9 +391,16 @@
                 <div class="glass-detail space-y-12 pb-20">
                     <!-- HEADER -->
                     <header class="flex flex-col md:flex-row justify-between items-baseline gap-4 border-b-4 border-black pb-8">
-                        <div>
-                            <h2 class="text-6xl font-black tracking-tighter">${data['Data']}</h2>
-                            <p class="text-sm font-mono uppercase tracking-[0.3em] text-gray-400">Ingestão: ${data['Hora remédio']}</p>
+                        <div class="flex items-center gap-6">
+                             <div class="bg-gray-100 p-4 rounded-full">
+                                <i data-lucide="calendar" class="w-10 h-10 text-black"></i>
+                             </div>
+                             <div>
+                                <h2 class="text-6xl font-black tracking-tighter">${data['Data']}</h2>
+                                <p class="text-sm font-mono uppercase tracking-[0.3em] text-gray-400 flex items-center gap-2">
+                                    <i data-lucide="clock" class="w-3 h-3"></i> Ingestão: ${data['Hora remédio']}
+                                </p>
+                            </div>
                         </div>
                         <div class="bg-black text-white px-8 py-4 text-center">
                             <span class="block text-[10px] uppercase tracking-widest opacity-50 mb-1">Dose Ministrada</span>
@@ -226,52 +411,86 @@
                     <!-- GRIDS DE MÉTRICAS -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
                         <div class="space-y-10">
-                            <h3 class="text-[10px] font-black uppercase tracking-[0.5em] border-b border-gray-100 pb-2 text-gray-400">Estado Mental</h3>
-                            ${renderMetricLine("Ruído Mental", data['Ruído mental (0–5)'])}
-                            ${renderMetricLine("Clareza Cognitiva", data['Clareza (0–5)'])}
-                            ${renderMetricLine("Nível de Cansaço", data['Cansaço (0–5)'])}
+                            <h3 class="text-[10px] font-black uppercase tracking-[0.5em] border-b border-gray-100 pb-2 text-gray-400 flex items-center gap-2">
+                                <i data-lucide="brain" class="w-3 h-3"></i> Estado Mental
+                            </h3>
+                            ${renderMetricLine("Ruído Mental", data['Ruído mental (0–5)'], "brain-circuit", TOOLTIPS.ruido)}
+                            ${renderMetricLine("Clareza Cognitiva", data['Clareza (0–5)'], "sparkles", TOOLTIPS.clareza)}
+                            ${renderMetricLine("Cansaço Físico", data['Cansaço (0–5)'], "battery-low", TOOLTIPS.cansaco)}
 
                             <div class="pt-6 space-y-2">
-                                <h3 class="text-[10px] font-black uppercase tracking-[0.5em] text-gray-400 mb-4">Foco & Fluxo</h3>
-                                <p class="text-2xl font-semibold leading-tight text-black italic">"${data['Foco'] || 'Sem registro de foco.'}"</p>
+                                <div class="flex items-center gap-2 mb-4">
+                                    <div class="tooltip-container">
+                                        <h3 class="text-[10px] font-black uppercase tracking-[0.5em] text-gray-400 underline decoration-dotted underline-offset-4">Foco & Fluxo</h3>
+                                        <div class="tooltip-content">${TOOLTIPS.foco}</div>
+                                    </div>
+                                </div>
+                                <div class="flex gap-4 items-start">
+                                    <i data-lucide="target" class="w-6 h-6 text-black shrink-0 mt-1"></i>
+                                    <p class="text-2xl font-semibold leading-tight text-black italic">"${data['Foco'] || 'Sem registro de foco.'}"</p>
+                                </div>
                             </div>
                         </div>
 
                         <div class="space-y-8">
-                            <h3 class="text-[10px] font-black uppercase tracking-[0.5em] border-b border-gray-100 pb-2 text-gray-400">Fisiologia</h3>
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm font-bold uppercase tracking-widest text-gray-600">Sono</span>
+                            <h3 class="text-[10px] font-black uppercase tracking-[0.5em] border-b border-gray-100 pb-2 text-gray-400 flex items-center gap-2">
+                                <i data-lucide="activity" class="w-3 h-3"></i> Fisiologia
+                            </h3>
+                            
+                            <!-- Sono em Destaque -->
+                            <div class="flex items-center justify-between bg-gray-50 p-6 border-l-4 border-black mb-6">
+                                <div class="flex items-center gap-4">
+                                    <i data-lucide="moon" class="w-8 h-8 text-gray-400"></i>
+                                    <span class="text-lg font-bold uppercase tracking-widest text-gray-600">Tempo de Sono</span>
+                                </div>
                                 <div class="flex items-baseline">
-                                    <span class="text-5xl font-black mr-2">${data['Sono (h)']}</span>
+                                    <span class="text-6xl font-black mr-2">${data['Sono (h)']}</span>
                                     <span class="text-xs font-bold text-gray-400 uppercase">Horas</span>
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-2 text-[10px] font-bold uppercase">
-                                ${renderBadge("Dormiu Antes", data['Dormiu antes'])}
-                                ${renderBadge("Pico de Efeito", data['Pico claro'])}
-                                ${renderBadge("Euforia", data['Euforia'])}
-                                ${renderBadge("Ansiedade", data['Ansiedade'])}
-                                ${renderBadge("Crash Energia", data['Queda energia'])}
-                                ${renderBadge("Irritabilidade", data['Irritado fim do dia'])}
+                            <!-- Badges em Lista -->
+                            <div class="flex flex-col gap-3">
+                                ${renderBadgeRow("Dormiu Antes", data['Dormiu antes'], "bed", "")}
+                                ${renderBadgeRow("Pico de Efeito Percebido", data['Pico claro'], "trending-up", TOOLTIPS.pico)}
+                                ${renderBadgeRow("Estado de Euforia", data['Euforia'], "smile", TOOLTIPS.euforia)}
+                                ${renderBadgeRow("Nível de Ansiedade", data['Ansiedade'], "alert-circle", TOOLTIPS.ansiedade)}
+                                ${renderBadgeRow("Queda Brusca de Energia", data['Queda energia'], "arrow-down-circle", TOOLTIPS.queda)}
+                                ${renderBadgeRow("Irritabilidade (Fim do Dia)", data['Irritado fim do dia'], "frown", TOOLTIPS.irritabilidade)}
+                                ${renderBadgeRow("Prognóstico: Sono Esperado", data['Sono esperado'], "moon-star", TOOLTIPS.sono)}
                             </div>
 
-                            <div class="mt-12 p-6 border-l-4 ${uso ? 'border-red-600 bg-red-50' : 'border-black bg-gray-50'} transition-colors">
-                                <h4 class="text-[10px] font-black uppercase tracking-widest mb-4 ${uso ? 'text-red-600' : 'text-gray-400'}">Redução de Danos</h4>
-                                <div class="flex justify-between items-center mb-4">
-                                    <span class="text-xs font-bold uppercase">Uso de Substância</span>
-                                    <span class="font-black text-xl ${uso ? 'text-red-600' : 'text-black'}">${uso ? 'SIM' : 'NÃO'}</span>
+                            <!-- REDUÇÃO DE DANOS COM CAPA -->
+                            <div class="reveal-container relative mt-12 overflow-hidden border-2 border-red-600 min-h-[140px] bg-red-50 flex flex-col justify-center">
+                                <div class="overlay absolute inset-0 bg-red-600 z-10 flex items-center justify-center text-white cursor-help">
+                                    <i data-lucide="zap" class="w-16 h-16"></i>
                                 </div>
-                                <div class="grid grid-cols-2 gap-4 text-[9px] text-gray-500 font-bold uppercase">
-                                    <div><p class="opacity-50">Tipo</p><p class="text-black">${data['Tipo de uso'] || '---'}</p></div>
-                                    <div><p class="opacity-50">Pensamento</p><p class="text-black">${data['Pensamento sobre uso'] || '---'}</p></div>
+                                <div class="p-8 space-y-4">
+                                    <div class="flex justify-between items-center border-b border-red-200 pb-2">
+                                        <span class="text-[10px] font-black uppercase text-red-600 tracking-widest">Uso no Ciclo</span>
+                                        <span class="font-black text-2xl ${uso ? 'text-red-700 underline underline-offset-4' : 'text-gray-400'}">
+                                            ${uso ? 'SIM' : 'NÃO'}
+                                        </span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-6 text-[10px] font-bold uppercase">
+                                        <div class="flex items-start gap-2">
+                                            <i data-lucide="hash" class="w-3 h-3 text-red-300"></i>
+                                            <div><p class="text-red-400 opacity-70">Tipo</p><p class="text-red-900">${data['Tipo de uso'] || '---'}</p></div>
+                                        </div>
+                                        <div class="flex items-start gap-2">
+                                            <i data-lucide="message-square" class="w-3 h-3 text-red-300"></i>
+                                            <div><p class="text-red-400 opacity-70">Pensamento</p><p class="text-red-900">${data['Pensamento sobre uso'] || '---'}</p></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="mt-12 pt-12 border-t border-gray-100">
-                        <h3 class="text-[10px] font-black uppercase tracking-[0.5em] text-gray-400 mb-6 text-center">Relato Qualitativo</h3>
+                        <h3 class="text-[10px] font-black uppercase tracking-[0.5em] text-gray-400 mb-6 text-center flex items-center justify-center gap-2">
+                            <i data-lucide="quote" class="w-3 h-3"></i> Relato Qualitativo
+                        </h3>
                         <div class="text-4xl font-light leading-tight tracking-tight text-gray-800 text-center max-w-2xl mx-auto">
                             ${data['Observação curta'] || 'Nenhum insight registrado para este ciclo.'}
                         </div>
@@ -281,12 +500,20 @@
             lucide.createIcons();
         }
 
-        function renderMetricLine(label, value) {
+        function renderMetricLine(label, value, iconName, tooltipText) {
             const color = getColor(value);
             return `<div class="flex items-center space-x-6">
-                <div class="w-16 h-16 shrink-0 flex items-center justify-center border-2 border-gray-100 rounded-full text-2xl font-black" style="color: ${color}">${value}</div>
+                <div class="w-16 h-16 shrink-0 flex items-center justify-center border-2 border-gray-100 rounded-full text-2xl font-black transition-colors" style="color: ${color}; border-color: ${color}22">
+                    ${value}
+                </div>
                 <div class="flex-1">
-                    <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">${label}</p>
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="tooltip-container">
+                            <i data-lucide="${iconName}" class="w-3 h-3 text-gray-400 mr-1"></i>
+                            <p class="text-xs font-bold uppercase tracking-widest text-gray-400 underline decoration-dotted underline-offset-4">${label}</p>
+                            <div class="tooltip-content">${tooltipText}</div>
+                        </div>
+                    </div>
                     <div class="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
                         <div class="h-full transition-all duration-700" style="width: ${(value/5)*100}%; background-color: ${color}"></div>
                     </div>
@@ -294,15 +521,25 @@
             </div>`;
         }
 
-        function renderBadge(label, val) {
+        function renderBadgeRow(label, val, iconName, tooltipText) {
             const pos = isPositive(val);
-            return `<div class="flex items-center justify-between p-2 border border-gray-100 ${pos ? 'bg-red-50 border-red-100' : ''}">
-                <span class="text-gray-400 text-[8px]">${label}</span>
-                <span class="${pos ? 'text-red-600' : 'text-gray-900'}">${pos ? 'SIM' : 'NÃO'}</span>
+            const hasTooltip = tooltipText !== "";
+            return `<div class="flex items-center justify-between p-4 border border-gray-100 bg-white hover:border-black transition-all group ${pos ? 'bg-red-50 border-red-300' : ''}">
+                <div class="flex items-center gap-4">
+                    <i data-lucide="${iconName}" class="w-5 h-5 ${pos ? 'text-red-600' : 'text-gray-300 group-hover:text-black'} transition-colors"></i>
+                    
+                    <div class="${hasTooltip ? 'tooltip-container' : ''}">
+                        <span class="text-gray-500 text-xs flex items-center gap-1 uppercase font-bold tracking-tight ${hasTooltip ? 'underline decoration-dotted underline-offset-4' : ''}">
+                            ${label}
+                        </span>
+                        ${hasTooltip ? `<div class="tooltip-content">${tooltipText}</div>` : ''}
+                    </div>
+                </div>
+                <span class="${pos ? 'text-red-600' : 'text-gray-900'} text-sm font-black tracking-widest uppercase">${val || 'NÃO'}</span>
             </div>`;
         }
 
-        /* --- NOVAS FUNCIONALIDADES: IMPORT/EXPORT --- */
+        /* --- IMPORT/EXPORT FUNCTIONS --- */
 
         function exportJSON() {
             const dataStr = JSON.stringify(appData, null, 2);
@@ -347,7 +584,7 @@
 ## Informações Gerais
 - **Dose:** ${data.Dose}
 - **Hora da Ingestão:** ${data['Hora remédio']}
-- **Sono:** ${data['Sono (h)']}h (Dormiu antes: ${data['Dormiu antes']})
+- **Sono:** ${data['Sono (h)']}h
 
 ## Estado Mental
 - **Ruído Mental:** ${data['Ruído mental (0–5)']}/5

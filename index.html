@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADHD Log | Minimalist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #1a1a1a;
+            overflow: hidden;
+        }
+
+        .sidebar-scroll {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .sidebar-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .active-day {
+            background-color: #000;
+            color: #fff;
+        }
+
+        .metric-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .glass-detail {
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-tool {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+            border: 1px solid #e5e7eb;
+            background: white;
+        }
+
+        .btn-tool:hover {
+            background: #f9fafb;
+            border-color: #000;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden bg-gray-50">
+
+    <!-- SIDEBAR: HISTÓRICO -->
+    <aside class="w-64 md:w-80 bg-white border-r border-gray-200 flex flex-col h-full shrink-0">
+        <div class="p-6 border-b border-gray-100 flex justify-between items-center">
+            <h1 class="font-extrabold text-xl tracking-tighter uppercase">Diário TDAH</h1>
+            <button onclick="fetchData()" class="p-2 hover:bg-gray-100 rounded-full transition-colors" title="Sincronizar Planilha">
+                <i data-lucide="refresh-cw" class="w-4 h-4 text-gray-400"></i>
+            </button>
+        </div>
+        
+        <nav id="history-list" class="flex-1 overflow-y-auto sidebar-scroll">
+            <div class="p-10 text-center text-gray-300 animate-pulse uppercase text-[10px] font-bold">Carregando dados...</div>
+        </nav>
+
+        <div class="p-4 bg-gray-50 border-t border-gray-200 text-[10px] font-mono text-gray-400 uppercase tracking-widest text-center">
+            v2.2 Swiss Minimalist
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT: DETALHES -->
+    <main class="flex-1 overflow-y-auto bg-white flex flex-col">
+        <!-- TOP TOOLBAR -->
+        <div class="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-100 px-8 py-4 flex justify-end gap-2">
+            <button onclick="exportJSON()" class="btn-tool">
+                <i data-lucide="download" class="w-3 h-3 text-blue-600"></i> Exportar Tudo (JSON)
+            </button>
+            <label class="btn-tool cursor-pointer">
+                <i data-lucide="upload" class="w-3 h-3 text-green-600"></i> Importar (JSON)
+                <input type="file" id="importJson" accept=".json" class="hidden" onchange="importJSON(event)">
+            </label>
+            <div id="day-actions" class="hidden flex gap-2">
+                <div class="w-[1px] h-full bg-gray-200 mx-2"></div>
+                <button onclick="exportMarkdown()" class="btn-tool bg-black text-white border-black hover:bg-gray-800">
+                    <i data-lucide="file-text" class="w-3 h-3"></i> Exportar Dia (.MD)
+                </button>
+            </div>
+        </div>
+
+        <div id="detail-view" class="flex-1 max-w-4xl mx-auto p-8 md:p-16 w-full">
+            <div class="flex flex-col items-center justify-center h-full text-gray-300 italic font-light space-y-4">
+                <i data-lucide="layout" class="w-12 h-12 opacity-20"></i>
+                <p>Selecione um dia no histórico para visualizar os detalhes.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT1JyTDdbWMSyj6puua-BwPJbfK_c9zie0PPx34P8d0zaUar_t7vPSUGsxNZqQNG1Kr3TeQim9B8xod/pub?gid=0&single=true&output=csv';
+        let appData = [];
+        let activeIdx = null;
+
+        const COLORS = {
+            0: '#850000', 1: '#C00000', 2: '#FF8C00', 3: '#D4FF00', 4: '#4ADE80', 5: '#1D4ED8'
+        };
+
+        function isPositive(val) {
+            if (!val) return false;
+            const n = String(val).toLowerCase().trim();
+            return n === 'sim' || n === 'true' || n === 's';
+        }
+
+        function getColor(val) {
+            const v = Math.round(parseFloat(String(val).replace(',', '.')) || 0);
+            return COLORS[v] || '#e5e7eb';
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch(`${CSV_URL}&t=${new Date().getTime()}`);
+                const csvText = await response.text();
+                appData = parseData(csvText);
+                renderHistory();
+                if (appData.length > 0) {
+                    selectDay(appData.length - 1);
+                }
+            } catch (error) {
+                console.error("Erro ao carregar:", error);
+            }
+        }
+
+        function parseData(text) {
+            const lines = text.trim().split(/\r?\n/);
+            if (lines.length < 2) return [];
+            const separator = lines[0].includes('\t') ? '\t' : ',';
+            const headers = lines[0].split(separator).map(h => h.replace(/^"|"$/g, '').trim());
+            return lines.slice(1).map(line => {
+                let row = [];
+                if (separator === ',') {
+                    let field = '', inQuotes = false;
+                    for (let c of line) {
+                        if (c === '"') inQuotes = !inQuotes;
+                        else if (c === ',' && !inQuotes) { row.push(field); field = ''; }
+                        else field += c;
+                    }
+                    row.push(field);
+                } else {
+                    row = line.split('\t');
+                }
+                let obj = {};
+                headers.forEach((h, i) => { if (h) obj[h] = (row[i] || "").replace(/^"|"$/g, '').trim(); });
+                return obj;
+            });
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            if (!appData || appData.length === 0) {
+                list.innerHTML = '<div class="p-10 text-center text-gray-300">Nenhum dado encontrado.</div>';
+                return;
+            }
+
+            list.innerHTML = appData.slice().reverse().map((day, revIdx) => {
+                const actualIdx = appData.length - 1 - revIdx;
+                const isActive = activeIdx === actualIdx;
+                
+                return `
+                    <div onclick="selectDay(${actualIdx})" 
+                         class="px-6 py-5 border-b border-gray-50 cursor-pointer transition-all hover:bg-gray-50 flex items-center justify-between group ${isActive ? 'active-day' : ''}">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-widest ${isActive ? 'text-gray-400' : 'text-gray-400'}">${day['Data']}</p>
+                            <p class="font-bold text-sm">${day['Dose'] || 'N/A'}</p>
+                        </div>
+                        <div class="flex space-x-1">
+                            <div class="w-1.5 h-6 rounded-full" style="background-color: ${getColor(day['Ruído mental (0–5)'])}"></div>
+                            <div class="w-1.5 h-6 rounded-full" style="background-color: ${getColor(day['Clareza (0–5)'])}"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        window.selectDay = (index) => {
+            activeIdx = index;
+            document.getElementById('day-actions').classList.remove('hidden');
+            renderHistory();
+            renderDetail(appData[index]);
+        };
+
+        function renderDetail(data) {
+            const detail = document.getElementById('detail-view');
+            const uso = isPositive(data['Usou cocaína']);
+            
+            detail.innerHTML = `
+                <div class="glass-detail space-y-12 pb-20">
+                    <!-- HEADER -->
+                    <header class="flex flex-col md:flex-row justify-between items-baseline gap-4 border-b-4 border-black pb-8">
+                        <div>
+                            <h2 class="text-6xl font-black tracking-tighter">${data['Data']}</h2>
+                            <p class="text-sm font-mono uppercase tracking-[0.3em] text-gray-400">Ingestão: ${data['Hora remédio']}</p>
+                        </div>
+                        <div class="bg-black text-white px-8 py-4 text-center">
+                            <span class="block text-[10px] uppercase tracking-widest opacity-50 mb-1">Dose Ministrada</span>
+                            <span class="text-3xl font-black">${data['Dose']}</span>
+                        </div>
+                    </header>
+
+                    <!-- GRIDS DE MÉTRICAS -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
+                        <div class="space-y-10">
+                            <h3 class="text-[10px] font-black uppercase tracking-[0.5em] border-b border-gray-100 pb-2 text-gray-400">Estado Mental</h3>
+                            ${renderMetricLine("Ruído Mental", data['Ruído mental (0–5)'])}
+                            ${renderMetricLine("Clareza Cognitiva", data['Clareza (0–5)'])}
+                            ${renderMetricLine("Nível de Cansaço", data['Cansaço (0–5)'])}
+
+                            <div class="pt-6 space-y-2">
+                                <h3 class="text-[10px] font-black uppercase tracking-[0.5em] text-gray-400 mb-4">Foco & Fluxo</h3>
+                                <p class="text-2xl font-semibold leading-tight text-black italic">"${data['Foco'] || 'Sem registro de foco.'}"</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-8">
+                            <h3 class="text-[10px] font-black uppercase tracking-[0.5em] border-b border-gray-100 pb-2 text-gray-400">Fisiologia</h3>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-bold uppercase tracking-widest text-gray-600">Sono</span>
+                                <div class="flex items-baseline">
+                                    <span class="text-5xl font-black mr-2">${data['Sono (h)']}</span>
+                                    <span class="text-xs font-bold text-gray-400 uppercase">Horas</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 text-[10px] font-bold uppercase">
+                                ${renderBadge("Dormiu Antes", data['Dormiu antes'])}
+                                ${renderBadge("Pico de Efeito", data['Pico claro'])}
+                                ${renderBadge("Euforia", data['Euforia'])}
+                                ${renderBadge("Ansiedade", data['Ansiedade'])}
+                                ${renderBadge("Crash Energia", data['Queda energia'])}
+                                ${renderBadge("Irritabilidade", data['Irritado fim do dia'])}
+                            </div>
+
+                            <div class="mt-12 p-6 border-l-4 ${uso ? 'border-red-600 bg-red-50' : 'border-black bg-gray-50'} transition-colors">
+                                <h4 class="text-[10px] font-black uppercase tracking-widest mb-4 ${uso ? 'text-red-600' : 'text-gray-400'}">Redução de Danos</h4>
+                                <div class="flex justify-between items-center mb-4">
+                                    <span class="text-xs font-bold uppercase">Uso de Substância</span>
+                                    <span class="font-black text-xl ${uso ? 'text-red-600' : 'text-black'}">${uso ? 'SIM' : 'NÃO'}</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 text-[9px] text-gray-500 font-bold uppercase">
+                                    <div><p class="opacity-50">Tipo</p><p class="text-black">${data['Tipo de uso'] || '---'}</p></div>
+                                    <div><p class="opacity-50">Pensamento</p><p class="text-black">${data['Pensamento sobre uso'] || '---'}</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-12 pt-12 border-t border-gray-100">
+                        <h3 class="text-[10px] font-black uppercase tracking-[0.5em] text-gray-400 mb-6 text-center">Relato Qualitativo</h3>
+                        <div class="text-4xl font-light leading-tight tracking-tight text-gray-800 text-center max-w-2xl mx-auto">
+                            ${data['Observação curta'] || 'Nenhum insight registrado para este ciclo.'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function renderMetricLine(label, value) {
+            const color = getColor(value);
+            return `<div class="flex items-center space-x-6">
+                <div class="w-16 h-16 shrink-0 flex items-center justify-center border-2 border-gray-100 rounded-full text-2xl font-black" style="color: ${color}">${value}</div>
+                <div class="flex-1">
+                    <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">${label}</p>
+                    <div class="w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+                        <div class="h-full transition-all duration-700" style="width: ${(value/5)*100}%; background-color: ${color}"></div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function renderBadge(label, val) {
+            const pos = isPositive(val);
+            return `<div class="flex items-center justify-between p-2 border border-gray-100 ${pos ? 'bg-red-50 border-red-100' : ''}">
+                <span class="text-gray-400 text-[8px]">${label}</span>
+                <span class="${pos ? 'text-red-600' : 'text-gray-900'}">${pos ? 'SIM' : 'NÃO'}</span>
+            </div>`;
+        }
+
+        /* --- NOVAS FUNCIONALIDADES: IMPORT/EXPORT --- */
+
+        function exportJSON() {
+            const dataStr = JSON.stringify(appData, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `tdah_tracker_full_export_${new Date().toISOString().slice(0,10)}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (Array.isArray(importedData)) {
+                        appData = importedData;
+                        activeIdx = appData.length - 1;
+                        renderHistory();
+                        selectDay(activeIdx);
+                    } else {
+                        throw new Error("Formato JSON inválido");
+                    }
+                } catch (err) {
+                    alert("Erro ao importar JSON. Verifique o formato do arquivo.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function exportMarkdown() {
+            if (activeIdx === null) return;
+            const data = appData[activeIdx];
+            const uso = isPositive(data['Usou cocaína']);
+            
+            const mdContent = `# Relatório de Monitoramento TDAH - ${data.Data}
+
+## Informações Gerais
+- **Dose:** ${data.Dose}
+- **Hora da Ingestão:** ${data['Hora remédio']}
+- **Sono:** ${data['Sono (h)']}h (Dormiu antes: ${data['Dormiu antes']})
+
+## Estado Mental
+- **Ruído Mental:** ${data['Ruído mental (0–5)']}/5
+- **Clareza Cognitiva:** ${data['Clareza (0–5)']}/5
+- **Nível de Cansaço:** ${data['Cansaço (0–5)']}/5
+- **Foco:** ${data.Foco || 'Não registrado'}
+
+## Fisiologia & Eventos
+- **Pico de Efeito:** ${data['Pico claro']}
+- **Euforia:** ${data.Euforia}
+- **Ansiedade:** ${data.Ansiedade}
+- **Crash de Energia:** ${data['Queda energia']}
+- **Irritabilidade:** ${data['Irritado fim do dia']}
+
+## Redução de Danos
+- **Uso de Substância:** ${uso ? 'SIM' : 'NÃO'}
+- **Tipo de Uso:** ${data['Tipo de uso'] || 'N/A'}
+- **Pensamentos/Impulsividade:** ${data['Pensamento sobre uso'] || 'N/A'}
+
+## Observações
+> ${data['Observação curta'] || 'Nenhuma observação registrada.'}
+
+---
+*Gerado via TDAH Tracker System*`;
+
+            const blob = new Blob([mdContent], { type: "text/markdown" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `relatorio_tdah_${data.Data.replace(/\//g, '-')}.md`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        window.onload = fetchData;
+    </script>
+</body>
+</html>

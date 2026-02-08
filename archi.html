@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SISTEMA COMPATÍVEL COM SEU CÉREBRO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --primary: #2563eb;
+            --accent-fire: #ef4444;
+            --accent-brick: #64748b;
+            --accent-seed: #10b981;
+            --text-main: #1e293b;
+            --text-muted: #475569;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .version-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            background: var(--border);
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+        }
+
+        .principio-zero {
+            background: var(--primary);
+            color: white;
+            padding: 2.5rem;
+            border-radius: 24px;
+            margin-bottom: 3rem;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .principio-zero h2 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+
+        .principio-zero p {
+            font-size: 1.4rem;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--primary);
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .wrong {
+            color: #991b1b;
+            background: #fef2f2;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .right {
+            color: #065f46;
+            background: #ecfdf5;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        .list-items {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .list-items li {
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .list-items li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+        }
+
+        .fields-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .field {
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .field.ativo { border-top: 4px solid var(--accent-fire); }
+        .field.manutencao { border-top: 4px solid var(--accent-brick); }
+        .field.exploracao { border-top: 4px solid var(--accent-seed); }
+
+        .field strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .summary-box {
+            background: #1e293b;
+            color: #f1f5f9;
+            padding: 2.5rem;
+            border-radius: 24px;
+            margin-top: 4rem;
+        }
+
+        .summary-box h2 {
+            margin-bottom: 1.5rem;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .manifesto-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .manifesto-item {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #334155;
+        }
+
+        .warning-section {
+            background: #fffbeb;
+            border: 2px dashed #f59e0b;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-top: 2rem;
+        }
+
+        .warning-section h2 {
+            color: #92400e;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .tagline {
+            text-align: center;
+            margin-top: 3rem;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+
+        .pin {
+            display: inline-block;
+            background: #ffedd5;
+            color: #9a3412;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🧠 SISTEMA COMPATÍVEL COM SEU CÉREBRO</h1>
+        <span class="version-tag">(versão 1.0 — mínima, adaptável, viva)</span>
+    </header>
+
+    <section class="principio-zero">
+        <h2>PRINCÍPIO ZERO (o mais importante)</h2>
+        <p>Seu cérebro não funciona por continuidade. Ele funciona por ativação.</p>
+        <p style="margin-top: 1rem; opacity: 0.9; font-weight: 400;">
+            Tudo que ignora isso vai falhar.<br>
+            Tudo que respeita isso começa a funcionar.
+        </p>
+    </section>
+
+    <div class="grid">
+        <!-- 1 -->
+        <article class="card">
+            <h3>1️⃣ NÃO ROTINAS → ÂNCORAS</h3>
+            <div class="comparison">
+                <div class="wrong">
+                    <strong>❌ Rotina tradicional:</strong>
+                    <ul class="list-items" style="list-style: none;">
+                        <li>horário fixo</li>
+                        <li>sequência rígida</li>
+                        <li>depende de disciplina</li>
+                    </ul>
+                </div>
+                <div class="right">
+                    <strong>✅ Âncora compatível:</strong>
+                    <ul class="list-items" style="list-style: none;">
+                        <li>gatilho + ação curta</li>
+                        <li>sem horário fixo</li>
+                        <li>fácil de iniciar</li>
+                    </ul>
+                </div>
+            </div>
+            <div style="margin-top: 1.5rem;">
+                <strong>Exemplos reais:</strong>
+                <ul class="list-items">
+                    <li>“Abri o notebook → faço 1 micro-ação útil”</li>
+                    <li>“Sentei na cadeira → organizo só a mesa”</li>
+                    <li>“Peguei o celular → anoto uma coisa que está na cabeça”</li>
+                </ul>
+            </div>
+            <span class="pin">📌 A âncora não exige continuidade. Ela só garante início.</span>
+        </article>
+
+        <!-- 2 -->
+        <article class="card">
+            <h3>2️⃣ MICRO-EXECUÇÃO É A UNIDADE REAL (não tarefas)</h3>
+            <p>Você não executa tarefas. Você executa estados de ativação.</p>
+            <div style="background: #f1f5f9; padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                <strong>Regra de ouro:</strong> Se não dá pra fazer em 2–5 minutos, não é unidade executável.
+            </div>
+            <div class="comparison">
+                <div class="wrong">
+                    ❌ “Estudar”<br>
+                    ❌ “Organizar a vida”<br>
+                    ❌ “Cuidar da saúde”
+                </div>
+                <div class="right">
+                    ✅ “Abrir o PDF”<br>
+                    ✅ “Ler 1 página”<br>
+                    ✅ “Beber água”<br>
+                    ✅ “Escrever 3 linhas”
+                </div>
+            </div>
+            <p style="margin-top: 1rem;">
+                📌 Execução puxa execução.<br>
+                📌 Planejamento não.
+            </p>
+        </article>
+
+        <!-- 3 -->
+        <article class="card">
+            <h3>3️⃣ LISTAS MATAM. CAMPOS FUNCIONAM.</h3>
+            <div class="wrong" style="margin-bottom: 1.5rem;">
+                <strong>❌ To-do list:</strong> abstrata, cobra prioridade, gera culpa.
+            </div>
+            <strong>✅ CAMPOS DE AÇÃO (3 no máximo)</strong>
+            <p>Você vive com 3 campos, só isso:</p>
+            <div class="fields-container">
+                <div class="field ativo">
+                    <strong>🔥 Campo Ativo</strong>
+                    Algo que está te puxando agora (mesmo que pequeno)
+                </div>
+                <div class="field manutencao">
+                    <strong>🧱 Campo de Manutenção</strong>
+                    Coisas mínimas pra não colapsar (comer, banho, pagar conta)
+                </div>
+                <div class="field exploracao">
+                    <strong>🌱 Campo de Exploração</strong>
+                    Ideias, projetos, curiosidade (sem obrigação)
+                </div>
+            </div>
+            <p style="margin-top: 1.5rem;">
+                📌 Você nunca tenta equilibrar tudo.<br>
+                📌 Você só aceita onde a energia está.
+            </p>
+        </article>
+
+        <!-- 4 -->
+        <article class="card">
+            <h3>4️⃣ PRIORIDADE É EMOCIONAL, NÃO LÓGICA</h3>
+            <p>Você não sente “prioridade” como importância. Você sente como carga emocional + urgência + estímulo.</p>
+            <div style="margin-top: 1rem;">
+                <strong>Tradução prática:</strong>
+                <div class="comparison">
+                    <div class="wrong">❌ “Isso é o mais importante”</div>
+                    <div class="right">✅ “Isso me puxa mais AGORA?”</div>
+                </div>
+            </div>
+            <p style="margin-top: 1rem;">
+                📌 Forçar prioridade lógica = travamento<br>
+                📌 Seguir ativação = movimento
+            </p>
+        </article>
+
+        <!-- 5 -->
+        <article class="card">
+            <h3>5️⃣ SISTEMA ANTICULPA (obrigatório)</h3>
+            <p>Culpa desliga seu sistema.</p>
+            <div style="border-left: 4px solid var(--accent-fire); padding-left: 1rem; margin: 1rem 0;">
+                <strong>Regra explícita:</strong> Nenhum sistema que te acusa será mantido.
+            </div>
+            <p>Você mede apenas:</p>
+            <ul class="list-items">
+                <li>se houve ação</li>
+                <li>não qualidade</li>
+                <li>não volume</li>
+                <li>não constância</li>
+            </ul>
+            <span class="pin">1 micro-ação = vitória real.</span>
+        </article>
+
+        <!-- 6 -->
+        <article class="card">
+            <h3>6️⃣ AMBIENTE > FORÇA DE VONTADE</h3>
+            <p>Você não vai “virar disciplinado”. Você vai se cercar de atalhos certos.</p>
+            <ul class="list-items">
+                <li>Objetos visíveis = ações mais prováveis</li>
+                <li>Fricção física = bloqueio real</li>
+                <li>Apps simples > sistemas complexos</li>
+            </ul>
+            <p style="margin-top: 1rem;">
+                📌 Se exige lembrar → falha<br>
+                📌 Se exige querer → falha<br>
+                📌 Se acontece por estar ali → funciona
+            </p>
+        </article>
+
+        <!-- 7 -->
+        <article class="card">
+            <h3>7️⃣ CICLOS CURTOS, NÃO PLANOS LONGOS</h3>
+            <p>Você vive em ciclos de 1–7 dias.</p>
+            <div style="margin-top: 1rem; padding: 1rem; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;">
+                <strong>Toda semana responde só isso:</strong>
+                <ul class="list-items">
+                    <li>O que me ativou?</li>
+                    <li>O que me drenou?</li>
+                    <li>O que vou permitir fazer (não obrigar)?</li>
+                </ul>
+            </div>
+            <p style="margin-top: 1rem;">Sem metas. Sem promessas.</p>
+        </article>
+
+        <!-- 8 -->
+        <article class="card">
+            <h3>8️⃣ MEDICAÇÃO (se houver) — USO INTELIGENTE</h3>
+            <strong>Remédio:</strong>
+            <ul class="list-items">
+                <li>não cria identidade</li>
+                <li>não cria propósito</li>
+                <li>amplifica o que já existe</li>
+            </ul>
+            <div style="margin-top: 1rem;">
+                <strong>Então:</strong>
+                <ul class="list-items">
+                    <li>só use quando tiver âncora pronta</li>
+                    <li>evite usar pra “virar outra pessoa”</li>
+                    <li>use pra reduzir atrito, não pra exigir mais de si</li>
+                </ul>
+            </div>
+        </article>
+    </div>
+
+    <section class="summary-box">
+        <h2>🧩 COMO ISSO SE MANIFESTA NO DIA A DIA</h2>
+        <div class="manifesto-list">
+            <div class="manifesto-item">começa pequeno</div>
+            <div class="manifesto-item">segue energia</div>
+            <div class="manifesto-item">para sem culpa</div>
+            <div class="manifesto-item">retoma sem drama</div>
+            <div class="manifesto-item">executa em pulsos</div>
+            <div class="manifesto-item">constrói por acúmulo invisível</div>
+        </div>
+        <p style="margin-top: 2rem; color: #94a3b8;">
+            Isso parece “desorganizado” por fora. Por dentro, é funcional.
+        </p>
+    </section>
+
+    <section class="warning-section">
+        <h2>⚠️ O QUE VOCÊ NÃO VAI FAZER (e isso é libertador)</h2>
+        <div class="manifesto-list" style="color: #92400e;">
+            <div class="manifesto-item" style="border-bottom-color: #fde68a;">Planner perfeito</div>
+            <div class="manifesto-item" style="border-bottom-color: #fde68a;">Rotina rígida</div>
+            <div class="manifesto-item" style="border-bottom-color: #fde68a;">Sistema eterno</div>
+            <div class="manifesto-item" style="border-bottom-color: #fde68a;">Método definitivo</div>
+            <div class="manifesto-item" style="border-bottom-color: #fde68a;">Virar alguém “normal”</div>
+        </div>
+        <p style="margin-top: 1.5rem; font-weight: bold; text-align: center; font-size: 1.2rem;">
+            Você vai operar como você.
+        </p>
+    </section>
+
+    <footer class="tagline">
+        Arquitetura de Sistema de Vida Compatível com Neurodivergência
+    </footer>
+</div>
+
+</body>
+</html>

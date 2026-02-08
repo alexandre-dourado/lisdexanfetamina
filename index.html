@@ -86,7 +86,6 @@
             transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: none;
             
-            /* Swiss Styling */
             width: 288px;
             background-color: var(--swiss-white);
             border: var(--swiss-border);
@@ -228,7 +227,6 @@
             margin-right: 4px;
         }
 
-        /* Reveal Container Adjustment */
         .reveal-container .overlay {
             transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -236,28 +234,39 @@
             opacity: 0;
             pointer-events: none;
         }
+
+        /* Checkbox Custom visual */
+        .swiss-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid currentColor;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden bg-gray-50">
 
     <!-- SIDEBAR: HISTÓRICO -->
-    <aside class="w-64 md:w-80 bg-white border-r border-gray-200 flex flex-col h-full shrink-0">
+    <aside class="w-80 bg-white border-r border-gray-200 flex flex-col h-full shrink-0">
         <div class="p-6 border-b border-gray-100 flex justify-between items-center">
             <h1 class="font-extrabold text-xl tracking-tighter uppercase flex items-center gap-2">
                 <i data-lucide="clipboard-list" class="w-5 h-5 text-red-600"></i>
                 Diário TDAH
             </h1>
-            <button onclick="fetchData()" class="p-2 hover:bg-gray-100 rounded-full transition-colors" title="Sincronizar Planilha">
+            <button onclick="fetchData()" class="p-2 hover:bg-gray-100 rounded-full transition-colors" title="Sincronizar">
                 <i data-lucide="refresh-cw" class="w-4 h-4 text-gray-400"></i>
             </button>
         </div>
         
         <nav id="history-list" class="flex-1 overflow-y-auto sidebar-scroll">
-            <div class="p-10 text-center text-gray-300 animate-pulse uppercase text-[10px] font-bold">Carregando dados...</div>
+            <div class="p-10 text-center text-gray-300 animate-pulse uppercase text-[10px] font-bold">Carregando...</div>
         </nav>
 
         <div class="p-4 bg-gray-50 border-t border-gray-200 text-[10px] font-mono text-gray-400 uppercase tracking-widest text-center">
-            v2.7 Swiss Aesthetic Log
+            v3.0 Swiss Core
         </div>
     </aside>
 
@@ -272,7 +281,7 @@
                 <button onclick="exportJSON()" class="btn-tool"><i data-lucide="download" class="w-3 h-3 text-blue-600"></i> JSON</button>
                 <label class="btn-tool cursor-pointer"><i data-lucide="upload" class="w-3 h-3 text-green-600"></i> Importar<input type="file" id="importJson" accept=".json" class="hidden" onchange="importJSON(event)"></label>
                 <div id="day-actions" class="hidden flex gap-2">
-                    <button onclick="exportMarkdown()" class="btn-tool bg-black text-white border-black hover:bg-gray-800"><i data-lucide="file-text" class="w-3 h-3"></i> Markdown</button>
+                    <button onclick="exportMarkdown()" class="btn-tool bg-black text-white border-black hover:bg-gray-800"><i data-lucide="file-text" class="w-3 h-3"></i> MD</button>
                 </div>
             </div>
         </div>
@@ -290,120 +299,24 @@
         let appData = [];
         let activeIdx = null;
 
-        const COLORS = { 0: '#850000', 1: '#C00000', 2: '#FF8C00', 3: '#D4FF00', 4: '#4ADE80', 5: '#1D4ED8' };
+        const SCALE_GOOD_TO_BAD = ['#1D4ED8', '#4ADE80', '#D4FF00', '#FF8C00', '#C00000', '#850000'];
 
-        // Structured Tooltip Content
         const TOOLTIP_DATA = {
-            ruido: {
-                def: "Quantidade de pensamentos simultâneos competindo por atenção.",
-                obs: ["Quantos assuntos ativos?", "Pensa enquanto pensa?", "Ideias se atropelam?"],
-                scale: "0-1 (Linear) a 4-5 (Atropelado)",
-                tip: "Diminui sem você se sentir acelerado.",
-                icon: "brain-circuit"
-            },
-            clareza: {
-                def: "Nitidez para entender contextos e tomar decisões sem névoa.",
-                obs: ["Entende o que está fazendo?", "Menos confusão interna?", "Decisões diretas?"],
-                scale: "0-1 (Névoa) a 4-5 (Espontânea)",
-                tip: "Clareza não é o mesmo que ter energia.",
-                icon: "sparkles"
-            },
-            cansaco: {
-                def: "Estado físico real do organismo.",
-                obs: ["Corpo pesado?", "Olhos ardendo?", "Lentidão motora?"],
-                scale: "0-1 (Leve) a 4-5 (Arrastado)",
-                tip: "Estimulantes mascaram — observe sinais sutis.",
-                icon: "battery-low"
-            },
-            euforia: {
-                def: "Elevação artificial de humor fora do padrão funcional.",
-                obs: ["Otimismo exagerado?", "Empolgação sem motivo?", "Tudo parece resolvido?"],
-                scale: "Não / Leve / Moderada / Intensa",
-                tip: "Euforia não é o objetivo terapêutico.",
-                icon: "smile"
-            },
-            ansiedade: {
-                def: "Estado de ativação acompanhado de desconforto.",
-                obs: ["Tensão corporal?", "Pressa mental?", "Inquietação?"],
-                scale: "Não / Leve / Moderada / Intensa",
-                tip: "Vem com urgência, clareza vem com calma.",
-                icon: "alert-circle"
-            },
-            foco: {
-                def: "Capacidade de sustentar a atenção de forma flexível.",
-                obs: ["Fica na tarefa?", "Sai da tarefa sem travar?", "Sem hiperfixação?"],
-                scale: "Contínuo / Rígido / Habitual",
-                tip: "Foco terapêutico deve permitir transição.",
-                icon: "target"
-            },
-            pico: {
-                def: "Início abrupto ou nítido demais do efeito.",
-                obs: ["O remédio 'bateu'?", "Mudança repentina?", "Transição nítida?"],
-                scale: "Sim / Não",
-                tip: "Idealmente, a transição deve ser imperceptível.",
-                icon: "trending-up"
-            },
-            irritabilidade: {
-                def: "Baixa tolerância emocional no fim do dia.",
-                obs: ["Sons incomodam?", "Pessoas irritam fácil?", "Paciência curta?"],
-                scale: "Sim / Não",
-                tip: "Geralmente associado ao 'crash' de dopamina.",
-                icon: "frown"
-            },
-            queda: {
-                def: "Esvaziamento súbito de disposição e humor.",
-                obs: ["Cansaço súbito?", "Humor despenca?", "Fim do efeito nítido?"],
-                scale: "Sim / Não",
-                tip: "Pode ser ajustado com alimentação ou dose.",
-                icon: "arrow-down-circle"
-            },
-            sono: {
-                def: "Previsão honesta sobre a capacidade de repouso.",
-                obs: ["Corpo pede descanso?", "Mente desacelerando?", "Sente sono?"],
-                scale: "Melhor / Igual / Pior",
-                tip: "É um prognóstico técnico, não um desejo.",
-                icon: "moon-star"
-            }
+            ruido: { def: "Quantidade de pensamentos simultâneos competindo por atenção.", obs: ["Quantos assuntos ativos?", "Pensa enquanto pensa?", "Ideias se atropelam?"], scale: "0-1 (Linear) a 4-5 (Atropelado)", tip: "Diminui sem você se sentir acelerado.", icon: "brain-circuit" },
+            clareza: { def: "Nitidez para entender contextos e tomar decisões sem névoa.", obs: ["Entende o que está fazendo?", "Menos confusão interna?", "Decisões diretas?"], scale: "0-1 (Névoa) a 4-5 (Espontânea)", tip: "Clareza não é o mesmo que ter energia.", icon: "sparkles" },
+            cansaco: { def: "Estado físico real do organismo.", obs: ["Corpo pesado?", "Olhos ardendo?", "Lentidão motora?"], scale: "0-1 (Leve) a 4-5 (Arrastado)", tip: "Estimulantes mascaram — observe sinais sutis.", icon: "battery-low" },
+            euforia: { def: "Elevação artificial de humor fora do padrão funcional.", obs: ["Otimismo exagerado?", "Empolgação sem motivo?", "Tudo parece resolvido?"], scale: "Não / Leve / Moderada / Intensa", tip: "Euforia não é o objetivo terapêutico.", icon: "smile" },
+            ansiedade: { def: "Estado de ativação acompanhado de desconforto.", obs: ["Tensão corporal?", "Pressa mental?", "Inquietação?"], scale: "Não / Leve / Moderada / Intensa", tip: "Vem com urgência, clareza vem com calma.", icon: "alert-circle" },
+            foco: { def: "Capacidade de sustentar a atenção de forma flexível.", obs: ["Fica na tarefa?", "Sai da tarefa sem travar?", "Sem hiperfixação?"], scale: "Contínuo / Rígido / Habitual", tip: "Foco terapêutico deve permitir transição.", icon: "target" },
+            pico: { def: "Início abrupto ou nítido demais do efeito.", obs: ["O remédio 'bateu'?", "Mudança repentina?", "Transição nítida?"], scale: "Sim / Não", tip: "Idealmente, a transição deve ser imperceptível.", icon: "trending-up" },
+            irritabilidade: { def: "Baixa tolerância emocional no fim do dia.", obs: ["Sons incomodam?", "Pessoas irritam fácil?", "Paciência curta?"], scale: "Sim / Não", tip: "Geralmente associado ao 'crash' de dopamina.", icon: "frown" },
+            queda: { def: "Esvaziamento súbito de disposição e humor.", obs: ["Cansaço súbito?", "Humor despenca?", "Fim do efeito nítido?"], scale: "Sim / Não", tip: "Pode ser ajustado com alimentação ou dose.", icon: "arrow-down-circle" },
+            sono: { def: "Previsão honesta sobre a capacidade de repouso.", obs: ["Corpo pede descanso?", "Mente desacelerando?", "Sente sono?"], scale: "Melhor / Igual / Pior", tip: "É um prognóstico técnico, não um desejo.", icon: "moon-star" }
         };
 
-        function generateSwissTooltip(key, title) {
-            const data = TOOLTIP_DATA[key];
-            if (!data) return "";
-
-            return `
-                <div class="swiss-tooltip">
-                    <div class="swiss-header">
-                        <div class="swiss-icon-box">
-                            <i data-lucide="${data.icon}" class="w-5 h-5"></i>
-                        </div>
-                        <div class="swiss-title-box">
-                            <h2 class="swiss-title">${title}</h2>
-                        </div>
-                    </div>
-                    <div class="swiss-content">
-                        <section class="swiss-section">
-                            <span class="swiss-label">Definição</span>
-                            <p class="swiss-definition">${data.def}</p>
-                        </section>
-                        <section class="swiss-section swiss-divider">
-                            <span class="swiss-label">Observar</span>
-                            <ul class="swiss-list">
-                                ${data.obs.map(p => `<li class="swiss-list-item"><div class="swiss-dot"></div>${p}</li>`).join('')}
-                            </ul>
-                        </section>
-                        <section class="swiss-section">
-                            <div class="swiss-marking-box">
-                                <span class="swiss-label" style="font-size: 7px;">Escala de Marcação</span>
-                                <p class="swiss-marking-text">${data.scale}</p>
-                            </div>
-                        </section>
-                    </div>
-                    <div class="swiss-footer">
-                        <i data-lucide="lightbulb" class="w-3 h-3 shrink-0"></i>
-                        <p class="swiss-footer-text"><span class="swiss-footer-label">Dica:</span>${data.tip}</p>
-                    </div>
-                </div>
-            `;
+        function getSwissColor(val, isInverted) {
+            const v = Math.min(Math.max(Math.round(parseFloat(String(val).replace(',', '.')) || 0), 0), 5);
+            return isInverted ? SCALE_GOOD_TO_BAD[5 - v] : SCALE_GOOD_TO_BAD[v];
         }
 
         function isPositive(val) {
@@ -412,9 +325,20 @@
             return n === 'sim' || n === 'true' || n === 's';
         }
 
-        function getColor(val) {
-            const v = Math.round(parseFloat(String(val).replace(',', '.')) || 0);
-            return COLORS[v] || '#e5e7eb';
+        function generateSwissTooltip(key, title) {
+            const data = TOOLTIP_DATA[key];
+            if (!data) return "";
+            return `
+                <div class="swiss-tooltip">
+                    <div class="swiss-header"><div class="swiss-icon-box"><i data-lucide="${data.icon}" class="w-5 h-5"></i></div><div class="swiss-title-box"><h2 class="swiss-title">${title}</h2></div></div>
+                    <div class="swiss-content">
+                        <section class="swiss-section"><span class="swiss-label">Definição</span><p class="swiss-definition">${data.def}</p></section>
+                        <section class="swiss-section swiss-divider"><span class="swiss-label">Observar</span><ul class="swiss-list">${data.obs.map(p => `<li class="swiss-list-item"><div class="swiss-dot"></div>${p}</li>`).join('')}</ul></section>
+                        <section class="swiss-section"><div class="swiss-marking-box"><span class="swiss-label" style="font-size: 7px;">Escala</span><p class="swiss-marking-text">${data.scale}</p></div></section>
+                    </div>
+                    <div class="swiss-footer"><i data-lucide="lightbulb" class="w-3 h-3 shrink-0"></i><p class="swiss-footer-text"><span class="swiss-footer-label">Dica:</span>${data.tip}</p></div>
+                </div>
+            `;
         }
 
         async function fetchData() {
@@ -454,15 +378,28 @@
             list.innerHTML = appData.slice().reverse().map((day, revIdx) => {
                 const actualIdx = appData.length - 1 - revIdx;
                 const isActive = activeIdx === actualIdx;
+                const drugUse = isPositive(day['Usou cocaína']) || isPositive(day['PO']) || isPositive(day['CHA']) || isPositive(day['CIG']);
+                const foco = (day['Foco'] || '').toLowerCase();
+                
                 return `
-                    <div onclick="selectDay(${actualIdx})" class="px-6 py-5 border-b border-gray-50 cursor-pointer transition-all hover:bg-gray-50 flex items-center justify-between group ${isActive ? 'active-day' : ''}">
-                        <div>
-                            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">${day['Data']}</p>
+                    <div onclick="selectDay(${actualIdx})" class="px-5 py-5 border-b border-gray-50 cursor-pointer transition-all hover:bg-gray-50 flex items-center justify-between group ${isActive ? 'active-day' : ''}">
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center gap-2">
+                                <p class="text-[10px] font-bold uppercase tracking-widest ${isActive ? 'text-gray-400' : 'text-gray-400'}">${day['Data']}</p>
+                                <div class="flex items-center gap-2 opacity-50">
+                                    ${drugUse ? `<i data-lucide="alert-triangle" class="w-2.5 h-2.5 text-red-500"></i>` : ''}
+                                    <div class="flex items-center gap-1 text-[8px] font-bold uppercase"><i data-lucide="moon" class="w-2.5 h-2.5"></i>${day['Sono (h)'] || '0'}h</div>
+                                    <div class="flex items-center gap-1 text-[8px] font-bold uppercase">
+                                        <i data-lucide="${foco.includes('cont') ? 'zap' : foco.includes('ríg') ? 'lock' : 'circle'}" class="w-2.5 h-2.5"></i>
+                                    </div>
+                                </div>
+                            </div>
                             <p class="font-bold text-sm flex items-center gap-1"><i data-lucide="pill" class="w-3 h-3 ${isActive ? 'text-red-400' : 'text-red-600'}"></i>${day['Dose'] || 'N/A'}</p>
                         </div>
-                        <div class="flex space-x-1">
-                            <div class="w-1.5 h-6 rounded-full" style="background-color: ${getColor(day['Ruído mental (0–5)'])}"></div>
-                            <div class="w-1.5 h-6 rounded-full" style="background-color: ${getColor(day['Clareza (0–5)'])}"></div>
+                        <div class="flex gap-1.5 h-6">
+                            <div class="w-1 rounded-full" style="background-color: ${getSwissColor(day['Ruído mental (0–5)'], false)}"></div>
+                            <div class="w-1 rounded-full" style="background-color: ${getSwissColor(day['Clareza (0–5)'], true)}"></div>
+                            <div class="w-1 rounded-full" style="background-color: ${getSwissColor(day['Cansaço (0–5)'], false)}"></div>
                         </div>
                     </div>
                 `;
@@ -480,7 +417,9 @@
 
         function renderDetail(data) {
             const detail = document.getElementById('detail-view');
-            const uso = isPositive(data['Usou cocaína']);
+            const usoGeral = isPositive(data['Usou cocaína']) || isPositive(data['PO']) || isPositive(data['CHA']) || isPositive(data['CIG']);
+            const focoValue = (data['Foco'] || '').toLowerCase();
+            
             detail.innerHTML = `
                 <div class="glass-detail space-y-12 pb-20">
                     <header class="flex flex-col md:flex-row justify-between items-baseline gap-4 border-b-4 border-black pb-8">
@@ -491,22 +430,26 @@
                                 <p class="text-sm font-mono uppercase tracking-[0.3em] text-gray-400 flex items-center gap-2"><i data-lucide="clock" class="w-3 h-3"></i> Ingestão: ${data['Hora remédio']}</p>
                             </div>
                         </div>
-                        <div class="bg-black text-white px-8 py-4 text-center"><span class="block text-[10px] uppercase tracking-widest opacity-50 mb-1">Dose</span><span class="text-3xl font-black">${data['Dose']}</span></div>
+                        <div class="bg-black text-white px-8 py-4 text-center"><span class="block text-[10px] uppercase tracking-widest opacity-50 mb-1">Dose Ministrada</span><span class="text-3xl font-black">${data['Dose']}</span></div>
                     </header>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
                         <div class="space-y-10">
                             <h3 class="text-[10px] font-black uppercase tracking-[0.5em] border-b border-gray-100 pb-2 text-gray-400 flex items-center gap-2"><i data-lucide="brain" class="w-3 h-3"></i> Estado Mental</h3>
-                            ${renderMetricLine("Ruído Mental", data['Ruído mental (0–5)'], "ruido")}
-                            ${renderMetricLine("Clareza Mental", data['Clareza (0–5)'], "clareza")}
-                            ${renderMetricLine("Cansaço Físico", data['Cansaço (0–5)'], "cansaco")}
+                            ${renderMetricLine("Ruído Mental", data['Ruído mental (0–5)'], "ruido", false)}
+                            ${renderMetricLine("Clareza Cognitiva", data['Clareza (0–5)'], "clareza", true)}
+                            ${renderMetricLine("Cansaço Físico", data['Cansaço (0–5)'], "cansaco", false)}
 
-                            <div class="pt-6 space-y-2">
-                                <div class="tooltip-container">
+                            <div class="pt-6">
+                                <div class="tooltip-container mb-6">
                                     <h3 class="text-[10px] font-black uppercase tracking-[0.5em] text-gray-400 underline decoration-dotted underline-offset-4">Foco & Fluxo</h3>
                                     <div class="tooltip-content">${generateSwissTooltip("foco", "Foco & Fluxo")}</div>
                                 </div>
-                                <div class="flex gap-4 items-start"><i data-lucide="target" class="w-6 h-6 text-black mt-1"></i><p class="text-2xl font-semibold italic">"${data['Foco'] || '...'}"</p></div>
+                                <div class="grid grid-cols-3 gap-3">
+                                    ${renderFocoOption("Igual Habitual", "circle", focoValue.includes("hab"), "#71717a")}
+                                    ${renderFocoOption("Mais Contínuo", "zap", focoValue.includes("cont"), "#10b981")}
+                                    ${renderFocoOption("Mais Rígido", "lock", focoValue.includes("ríg"), "#f59e0b")}
+                                </div>
                             </div>
                         </div>
 
@@ -517,33 +460,52 @@
                                 <div class="flex items-baseline"><span class="text-6xl font-black mr-2">${data['Sono (h)']}</span><span class="text-xs font-bold text-gray-400 uppercase">Horas</span></div>
                             </div>
                             <div class="flex flex-col gap-3">
-                                ${renderBadgeRow("Pico de Efeito", data['Pico claro'], "pico")}
-                                ${renderBadgeRow("Euforia", data['Euforia'], "euforia")}
-                                ${renderBadgeRow("Ansiedade", data['Ansiedade'], "ansiedade")}
-                                ${renderBadgeRow("Crash Energia", data['Queda energia'], "queda")}
-                                ${renderBadgeRow("Irritabilidade", data['Irritado fim do dia'], "irritabilidade")}
+                                ${renderBadgeRow("Pico de Efeito Percebido", data['Pico claro'], "pico")}
+                                ${renderBadgeRow("Estado de Euforia", data['Euforia'], "euforia")}
+                                ${renderBadgeRow("Nível de Ansiedade", data['Ansiedade'], "ansiedade")}
+                                ${renderBadgeRow("Queda Brusca de Energia", data['Queda energia'], "queda")}
+                                ${renderBadgeRow("Irritabilidade (Crash)", data['Irritado fim do dia'], "irritabilidade")}
                                 ${renderBadgeRow("Sono Esperado", data['Sono esperado'], "sono")}
                             </div>
+
+                            <!-- REDUÇÃO DE DANOS SIMPLIFICADA -->
                             <div class="reveal-container relative mt-12 border-2 border-red-600 min-h-[140px] bg-red-50 flex flex-col justify-center">
                                 <div class="overlay absolute inset-0 bg-red-600 z-10 flex items-center justify-center text-white cursor-help"><i data-lucide="zap" class="w-16 h-16"></i></div>
-                                <div class="p-8 space-y-4">
-                                    <div class="flex justify-between items-center border-b border-red-200 pb-2"><span class="text-[10px] font-black text-red-600 uppercase">Uso no Ciclo</span><span class="font-black text-2xl ${uso ? 'text-red-700 underline' : 'text-gray-400'}">${uso ? 'SIM' : 'NÃO'}</span></div>
-                                    <div class="grid grid-cols-2 gap-6 text-[10px] font-bold uppercase">
-                                        <div><p class="text-red-400 opacity-70">Tipo</p><p class="text-red-900">${data['Tipo de uso'] || '---'}</p></div>
-                                        <div><p class="text-red-400 opacity-70">Impulsividade</p><p class="text-red-900">${data['Pensamento sobre uso'] || '---'}</p></div>
+                                <div class="p-8 space-y-6">
+                                    <div class="flex justify-between items-center border-b border-red-200 pb-2">
+                                        <span class="text-[10px] font-black text-red-600 uppercase tracking-widest">Monitoramento Substâncias</span>
+                                        <span class="font-black text-xl ${usoGeral ? 'text-red-700 underline' : 'text-gray-300'}">${usoGeral ? 'ALERTA' : 'LIMPO'}</span>
+                                    </div>
+                                    <div class="flex justify-around gap-2">
+                                        ${renderDrugIcon("cigarette", data['CIG'])}
+                                        ${renderDrugIcon("leaf", data['CHA'])}
+                                        ${renderDrugIcon("skull", data['Usou cocaína'] || data['PO'])}
+                                    </div>
+                                    <div class="pt-2 border-t border-red-100 flex items-start gap-2">
+                                        <i data-lucide="message-square" class="w-4 h-4 text-red-300 mt-0.5"></i>
+                                        <div><p class="text-[9px] text-red-400 uppercase font-bold">Impulsividade</p><p class="text-xs font-medium text-red-900 leading-tight">${data['Pensamento sobre uso'] || '...'}</p></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="mt-12 pt-12 border-t border-gray-100 text-center"><h3 class="text-[10px] font-black uppercase text-gray-400 mb-6 flex justify-center gap-2"><i data-lucide="quote" class="w-3 h-3"></i> Relato</h3><div class="text-4xl font-light leading-tight text-gray-800 italic max-w-2xl mx-auto">${data['Observação curta'] || '...'}</div></div>
+                    <div class="mt-12 pt-12 border-t border-gray-100"><h3 class="text-[10px] font-black uppercase text-gray-400 mb-6 flex justify-center gap-2 font-mono tracking-widest uppercase italic"><i data-lucide="quote" class="w-3 h-3"></i> Observação Curta</h3><div class="text-4xl font-light text-gray-800 italic text-center max-w-2xl mx-auto">${data['Observação curta'] || '...'}</div></div>
                 </div>
             `;
             lucide.createIcons();
         }
 
-        function renderMetricLine(label, value, key) {
-            const color = getColor(value);
+        function renderFocoOption(label, icon, active, color) {
+            return `
+                <div class="flex flex-col items-center gap-2 p-3 border-2 transition-all ${active ? 'border-black bg-white opacity-100' : 'border-gray-100 opacity-20'}">
+                    <i data-lucide="${icon}" class="w-6 h-6" style="color: ${active ? color : '#ccc'}"></i>
+                    <span class="text-[9px] font-black uppercase text-center leading-none">${label}</span>
+                </div>
+            `;
+        }
+
+        function renderMetricLine(label, value, key, isInverted) {
+            const color = getSwissColor(value, isInverted);
             return `<div class="flex items-center space-x-6">
                 <div class="w-16 h-16 shrink-0 flex items-center justify-center border-2 border-gray-100 rounded-full text-2xl font-black" style="color: ${color}; border-color: ${color}22">${value}</div>
                 <div class="flex-1">
@@ -562,11 +524,23 @@
             return `<div class="flex items-center justify-between p-4 border border-gray-100 hover:border-black transition-all group ${pos ? 'bg-red-50 border-red-300' : ''}">
                 <div class="tooltip-container">
                     <i data-lucide="${TOOLTIP_DATA[key].icon}" class="w-5 h-5 ${pos ? 'text-red-600' : 'text-gray-300'} mr-4"></i>
-                    <span class="text-gray-500 text-xs font-bold uppercase underline decoration-dotted underline-offset-4">${label}</span>
+                    <span class="text-gray-500 text-xs font-bold uppercase underline decoration-dotted underline-offset-4 tracking-tighter">${label}</span>
                     <div class="tooltip-content">${generateSwissTooltip(key, label)}</div>
                 </div>
                 <span class="${pos ? 'text-red-600' : 'text-gray-900'} text-sm font-black tracking-widest uppercase">${val || 'NÃO'}</span>
             </div>`;
+        }
+
+        function renderDrugIcon(icon, val) {
+            const pos = isPositive(val);
+            return `
+                <div class="flex flex-col items-center gap-2">
+                    <i data-lucide="${icon}" class="w-8 h-8 ${pos ? 'text-red-600' : 'text-gray-200'}"></i>
+                    <div class="swiss-checkbox ${pos ? 'bg-red-600 border-red-600 text-white' : 'border-gray-200 text-transparent'}">
+                        <i data-lucide="check" class="w-3 h-3"></i>
+                    </div>
+                </div>
+            `;
         }
 
         function exportJSON() { const s = JSON.stringify(appData, null, 2); const b = new Blob([s], { type: "application/json" }); const u = URL.createObjectURL(b); const l = document.createElement("a"); l.href = u; l.download = "tdah_export.json"; l.click(); }

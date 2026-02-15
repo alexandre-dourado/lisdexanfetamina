@@ -254,7 +254,7 @@
         <div class="p-6 border-b border-gray-100 flex justify-between items-center">
             <h1 class="font-extrabold text-xl tracking-tighter uppercase flex items-center gap-2">
                 <i data-lucide="clipboard-list" class="w-5 h-5 text-red-600"></i>
-                Diário TDAH
+                Lisdexanfetamina Tracker
             </h1>
             <button onclick="fetchData()" class="p-2 hover:bg-gray-100 rounded-full transition-colors" title="Sincronizar">
                 <i data-lucide="refresh-cw" class="w-4 h-4 text-gray-400"></i>
@@ -545,7 +545,7 @@
 
         function exportJSON() { const s = JSON.stringify(appData, null, 2); const b = new Blob([s], { type: "application/json" }); const u = URL.createObjectURL(b); const l = document.createElement("a"); l.href = u; l.download = "tdah_export.json"; l.click(); }
         function importJSON(e) { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => { try { const d = JSON.parse(ev.target.result); if (Array.isArray(d)) { appData = d; activeIdx = d.length - 1; renderHistory(); selectDay(activeIdx); } } catch (err) { alert("Erro JSON"); } }; r.readAsText(f); }
-        function exportMarkdown() { if (activeIdx === null) return; const d = appData[activeIdx]; const c = `# Relatório TDAH - ${d.Data}\n\nDose: ${d.Dose}\n\nFoco: ${d.Foco}\n\nObs: ${d['Observação curta']}`; const b = new Blob([c], { type: "text/markdown" }); const u = URL.createObjectURL(b); const l = document.createElement("a"); l.href = u; l.download = `tdah_${d.Data.replace(/\//g,'-')}.md`; l.click(); }
+        function exportMarkdown() { if (activeIdx === null) return; const d = appData[activeIdx]; const c = `# Relatório Lisdexanfetamina - ${d.Data}\n\nDose: ${d.Dose}\n\nFoco: ${d.Foco}\n\nObs: ${d['Observação curta']}`; const b = new Blob([c], { type: "text/markdown" }); const u = URL.createObjectURL(b); const l = document.createElement("a"); l.href = u; l.download = `tdah_${d.Data.replace(/\//g,'-')}.md`; l.click(); }
 
         window.onload = fetchData;
     </script>

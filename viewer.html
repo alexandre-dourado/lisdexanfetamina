@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lisdex · Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600&family=Syne+Mono&display=swap" rel="stylesheet">
+
+<!-- ══════════════════════════════════════════════════════════
+     CONFIGURAÇÃO — edite aqui
+     ══════════════════════════════════════════════════════════ -->
+<script>
+  // ⚠️ SUBSTITUA pelo URL do seu CSV publicado
+  // Vá em Arquivo > Compartilhar > Publicar na Web
+  // Selecione aba "registros", formato CSV, e copie o URL
+  const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vReq2SXGMQbxMNJIIDZHuKuaTCRBbsafecL1J4DwycPxD474CjAuBjFkY_FG4UN75fSuHUUnYTMzIXb/pub?gid=1570933595&single=true&output=csv';
+  
+  // Seu nome / apelido (opcional)
+  const NOME = 'tracker';
+</script>
+
+<style>
+  :root {
+    --bg: #fafaf8;
+    --surface: #ffffff;
+    --surface2: #f5f5f0;
+    --border: #e8e8e0;
+    --border-strong: #d0d0c8;
+    --text: #1a1a18;
+    --text-muted: #8a8a80;
+    --text-dim: #c0c0b8;
+    --accent: #1a1a18;
+    --accent2: #5b5bf6;
+    --green: #16a34a;
+    --red: #dc2626;
+    --amber: #d97706;
+    --font: 'Space Grotesk', sans-serif;
+    --mono: 'Syne Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── GRID LAYOUT ── */
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 24px;
+    margin-bottom: 48px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid var(--text);
+  }
+
+  .title-block h1 {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .title-block h2 {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .header-meta {
+    text-align: right;
+  }
+
+  .header-meta .big-num {
+    font-family: var(--mono);
+    font-size: 48px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .header-meta .label {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* ── SCORE ROW ── */
+  .score-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+
+  .score-cell {
+    background: var(--surface);
+    padding: 20px;
+  }
+
+  .score-cell .metric {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .score-cell .number {
+    font-size: 36px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .score-cell .sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .score-cell .trend {
+    font-family: var(--mono);
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  .trend-up { color: var(--green); }
+  .trend-down { color: var(--red); }
+  .trend-up-bad { color: var(--red); }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── CHARTS GRID ── */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .chart-card .card-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  canvas { display: block; }
+
+  /* ── CORRELAÇÕES ── */
+  .corr-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .corr-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+
+  .corr-card .corr-title {
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  .corr-card .corr-value {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 400;
+    margin-bottom: 4px;
+  }
+
+  .corr-card .corr-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  .corr-positive { color: var(--green); }
+  .corr-negative { color: var(--red); }
+  .corr-neutral { color: var(--text-muted); }
+
+  /* ── RADAR ── */
+  .radar-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  /* ── INSIGHTS ── */
+  .insights-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .insight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .insight-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .insight-text .title {
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 3px;
+  }
+
+  .insight-text .body {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* ── STRIP CHART ── */
+  .strip-section {
+    margin-bottom: 32px;
+  }
+
+  .strip-row {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .strip-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: right;
+  }
+
+  .strip-bars {
+    display: flex;
+    gap: 2px;
+    height: 20px;
+    align-items: center;
+  }
+
+  .strip-bar {
+    flex: 1;
+    height: 16px;
+    border-radius: 2px;
+    transition: opacity 0.15s;
+    cursor: default;
+    position: relative;
+  }
+
+  .strip-bar:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: var(--bg);
+    font-size: 10px;
+    padding: 3px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+    z-index: 10;
+    font-family: var(--mono);
+  }
+
+  /* ── DATA AGE WARNING ── */
+  .data-age {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+
+  /* ── LOADING / ERROR ── */
+  .fullscreen-msg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 12px;
+    color: var(--text-muted);
+  }
+
+  .fullscreen-msg .big { font-size: 48px; }
+  .fullscreen-msg .msg { font-family: var(--mono); font-size: 12px; }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--text);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  @media (max-width: 768px) {
+    .score-row { grid-template-columns: 1fr 1fr; }
+    .charts-grid { grid-template-columns: 1fr; }
+    .corr-grid { grid-template-columns: 1fr 1fr; }
+    .radar-section { grid-template-columns: 1fr; }
+    .insights-grid { grid-template-columns: 1fr; }
+    header { grid-template-columns: 1fr; }
+    .header-meta { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page" id="app">
+  <div class="fullscreen-msg" id="loading">
+    <div class="spinner"></div>
+    <div class="msg">carregando dados...</div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// CSV PARSER
+// ─────────────────────────────────────────────────────────────
+async function carregarCSV() {
+  if (CSV_URL === 'COLE_AQUI_O_URL_CSV_DA_PLANILHA') {
+    renderErro('Configure o CSV_URL no início do arquivo viewer.html');
+    return;
+  }
+  
+  try {
+    const resp = await fetch(CSV_URL);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const text = await resp.text();
+    const dados = parseCSV(text);
+    renderApp(dados);
+  } catch (err) {
+    renderErro('Não foi possível carregar os dados: ' + err.message);
+  }
+}
+
+function parseCSV(text) {
+  const linhas = text.trim().split('\n').map(l => l.split(',').map(v => v.trim().replace(/^"|"$/g, '')));
+  if (linhas.length < 2) return { headers: [], rows: [] };
+  
+  const headers = linhas[0];
+  const rows = linhas.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = row[i] || '');
+    return obj;
+  }).filter(r => r.dose_data || r.timestamp_registro); // Filtra linhas vazias
+  
+  return { headers, rows };
+}
+
+function renderErro(msg) {
+  document.getElementById('app').innerHTML = `
+    <div class="fullscreen-msg">
+      <div class="big">⚠</div>
+      <div class="msg">${msg}</div>
+    </div>
+  `;
+}
+
+// ─────────────────────────────────────────────────────────────
+// ANÁLISE
+// ─────────────────────────────────────────────────────────────
+function calcMedias(rows, campo, diasFiltro) {
+  let filtrados = rows;
+  if (diasFiltro) {
+    const corte = new Date(Date.now() - diasFiltro * 86400000);
+    filtrados = rows.filter(r => {
+      const d = new Date(r.timestamp_registro || r.dose_data);
+      return !isNaN(d) && d >= corte;
+    });
+  }
+  const vals = filtrados
+    .map(r => parseFloat(r[campo]))
+    .filter(v => !isNaN(v) && v > 0);
+  return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+}
+
+function calcCorrelacao(xs, ys) {
+  const n = Math.min(xs.length, ys.length);
+  if (n < 3) return null;
+  
+  const mx = xs.slice(0,n).reduce((a,b)=>a+b,0)/n;
+  const my = ys.slice(0,n).reduce((a,b)=>a+b,0)/n;
+  
+  let cov = 0, sdx = 0, sdy = 0;
+  for (let i=0; i<n; i++) {
+    cov += (xs[i]-mx)*(ys[i]-my);
+    sdx += (xs[i]-mx)**2;
+    sdy += (ys[i]-my)**2;
+  }
+  
+  const denom = Math.sqrt(sdx*sdy);
+  return denom ? (cov/denom).toFixed(2) : null;
+}
+
+function tendencia(vals) {
+  if (vals.length < 4) return 0;
+  const n = vals.length;
+  const x = vals.map((_, i) => i);
+  const mx = x.reduce((a,b)=>a+b,0)/n;
+  const my = vals.reduce((a,b)=>a+b,0)/n;
+  let num=0, den=0;
+  for (let i=0; i<n; i++) {
+    num += (x[i]-mx)*(vals[i]-my);
+    den += (x[i]-mx)**2;
+  }
+  return den ? num/den : 0;
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER PRINCIPAL
+// ─────────────────────────────────────────────────────────────
+function renderApp({ headers, rows }) {
+  if (!rows.length) {
+    renderErro('Planilha sem dados ainda. Adicione registros pelo dashboard.');
+    return;
+  }
+  
+  const total = rows.length;
+  const d7Rows = rows.filter(r => {
+    const d = new Date(r.timestamp_registro || r.dose_data);
+    return !isNaN(d) && d >= new Date(Date.now() - 7*86400000);
+  });
+  
+  // Métricas principais
+  const med = (campo, d) => {
+    const m = calcMedias(rows, campo, d);
+    return m ? m.toFixed(1) : '--';
+  };
+  
+  // Última data
+  const ultimaData = rows.length ? 
+    new Date(rows[rows.length-1].timestamp_registro || rows[rows.length-1].dose_data) : null;
+  const horasAtras = ultimaData ? 
+    Math.round((Date.now() - ultimaData) / 3600000) : null;
+  
+  // Correlações
+  const extrair = (campo) => rows.map(r => parseFloat(r[campo])).filter(v => !isNaN(v) && v > 0);
+  
+  const corrSonoFoco = calcCorrelacao(
+    rows.filter(r => parseFloat(r.sono_qualidade) && parseFloat(r.pico_foco)).map(r => parseFloat(r.sono_qualidade)),
+    rows.filter(r => parseFloat(r.sono_qualidade) && parseFloat(r.pico_foco)).map(r => parseFloat(r.pico_foco))
+  );
+  
+  const corrCafeFoco = calcCorrelacao(
+    rows.filter(r => parseFloat(r.cafe_qtd) !== undefined && parseFloat(r.pico_foco)).map(r => parseFloat(r.cafe_qtd)),
+    rows.filter(r => parseFloat(r.cafe_qtd) !== undefined && parseFloat(r.pico_foco)).map(r => parseFloat(r.pico_foco))
+  );
+  
+  const corrAlcoolSono = calcCorrelacao(
+    rows.filter(r => parseFloat(r.alcool_doses) !== undefined && parseFloat(r.sono_qualidade)).map(r => parseFloat(r.alcool_doses)),
+    rows.filter(r => parseFloat(r.alcool_doses) !== undefined && parseFloat(r.sono_qualidade)).map(r => parseFloat(r.sono_qualidade))
+  );
+  
+  const corrSonoAnsied = calcCorrelacao(
+    rows.filter(r => parseFloat(r.sono_qualidade) && parseFloat(r.pico_ansiedade)).map(r => parseFloat(r.sono_qualidade)),
+    rows.filter(r => parseFloat(r.sono_qualidade) && parseFloat(r.pico_ansiedade)).map(r => parseFloat(r.pico_ansiedade))
+  );
+  
+  const corrDoseFoco = calcCorrelacao(
+    rows.filter(r => parseFloat(r.dose_mg) && parseFloat(r.pico_foco)).map(r => parseFloat(r.dose_mg)),
+    rows.filter(r => parseFloat(r.dose_mg) && parseFloat(r.pico_foco)).map(r => parseFloat(r.pico_foco))
+  );
+  
+  const corrRebote = (() => {
+    const pares = rows.filter(r => parseFloat(r.basal_humor) && parseFloat(r.off_humor));
+    if (pares.length < 3) return null;
+    const rebotes = pares.map(r => parseFloat(r.off_humor) - parseFloat(r.basal_humor));
+    const media = rebotes.reduce((a,b)=>a+b,0)/rebotes.length;
+    return media.toFixed(2);
+  })();
+  
+  // Tendências
+  const ultimos = rows.slice(-14);
+  const tendFoco = tendencia(ultimos.map(r => parseFloat(r.pico_foco)).filter(v => !isNaN(v)));
+  const tendSono = tendencia(rows.slice(-14).map(r => parseFloat(r.sono_qualidade)).filter(v => !isNaN(v)));
+  
+  // Insights automáticos
+  const insights = gerarInsights(rows, corrSonoFoco, corrAlcoolSono, corrSonoAnsied, reboteMedia(rows), tendFoco);
+  
+  // Strip data (últimos 30)
+  const strip30 = rows.slice(-30);
+  
+  document.getElementById('app').innerHTML = `
+    <header>
+      <div class="title-block">
+        <h1>LISDEX · TRACKER</h1>
+        <h2>Analytics Dashboard</h2>
+      </div>
+      <div class="header-meta">
+        <div class="big-num">${total}</div>
+        <div class="label">registros totais</div>
+      </div>
+    </header>
+    
+    ${horasAtras !== null ? `
+    <div class="data-age">
+      ⏱ último registro: ${horasAtras < 24 ? horasAtras + 'h atrás' : Math.round(horasAtras/24) + ' dias atrás'}
+      &nbsp;·&nbsp; ${total} entradas · atualizado via CSV publicado
+    </div>
+    ` : ''}
+    
+    <!-- SCORE ROW -->
+    <div class="score-row">
+      <div class="score-cell">
+        <div class="metric">Foco médio</div>
+        <div class="number">${med('pico_foco', 7)}</div>
+        <div class="sub">últimos 7 dias / 5.0</div>
+        <div class="trend ${tendFoco > 0.05 ? 'trend-up' : tendFoco < -0.05 ? 'trend-down' : ''}">
+          ${tendFoco > 0.05 ? '↑ melhorando' : tendFoco < -0.05 ? '↓ caindo' : '→ estável'}
+        </div>
+      </div>
+      <div class="score-cell">
+        <div class="metric">Clareza mental</div>
+        <div class="number">${med('pico_clareza', 7)}</div>
+        <div class="sub">últimos 7 dias / 5.0</div>
+      </div>
+      <div class="score-cell">
+        <div class="metric">Ansiedade</div>
+        <div class="number">${med('pico_ansiedade', 7)}</div>
+        <div class="sub">últimos 7 dias / 5.0 (menor = melhor)</div>
+      </div>
+      <div class="score-cell">
+        <div class="metric">Nota do dia</div>
+        <div class="number">${med('nota_dia_geral', 7)}</div>
+        <div class="sub">últimos 7 dias / 10.0</div>
+      </div>
+    </div>
+    
+    <!-- CHARTS PRINCIPAIS -->
+    <div class="section-label">tendência temporal</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="card-title">Foco · Clareza · Ansiedade (todos os registros)</div>
+        <canvas id="mainChart" height="220"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="card-title">Sono · Nota do dia</div>
+        <canvas id="sonoChart" height="220"></canvas>
+      </div>
+    </div>
+    
+    <!-- STRIP CHART -->
+    <div class="section-label">histórico compacto — últimos 30 registros</div>
+    <div class="strip-section" id="stripSection"></div>
+    
+    <!-- CORRELAÇÕES -->
+    <div class="section-label">correlações</div>
+    <div class="corr-grid">
+      ${corrCard('Sono → Foco', corrSonoFoco, 
+        'Correlação entre qualidade do sono e foco no pico.',
+        'Valores próximos de +1 = sono ruim = menos foco.')}
+      ${corrCard('Café → Foco', corrCafeFoco,
+        'Correlação entre consumo de café e foco.',
+        'Positivo = mais café, mais foco. Mas verifique ansiedade.')}
+      ${corrCard('Álcool → Sono', corrAlcoolSono,
+        'Correlação entre doses de álcool e qualidade do sono seguinte.',
+        'Esperado negativo: álcool → pior sono.')}
+      ${corrCard('Sono → Ansiedade', corrSonoAnsied,
+        'Sono ruim relacionado com mais ansiedade no pico?',
+        'Negativo = menos sono, mais ansiedade.')}
+      ${corrCard('Dose → Foco', corrDoseFoco,
+        'Correlação entre mg da dose e foco.',
+        'Ajuda a identificar dose ótima.')}
+      <div class="corr-card">
+        <div class="corr-title">Rebote de Humor</div>
+        <div class="corr-value ${corrRebote === null ? 'corr-neutral' : parseFloat(corrRebote) < -0.3 ? 'corr-negative' : 'corr-positive'}">
+          ${corrRebote !== null ? (parseFloat(corrRebote) > 0 ? '+' : '') + corrRebote : '--'}
+        </div>
+        <div class="corr-desc">Diferença média (off − basal) de humor. Negativo = crash.</div>
+      </div>
+    </div>
+    
+    <!-- INSIGHTS AUTOMÁTICOS -->
+    <div class="section-label">insights detectados</div>
+    <div class="insights-grid">
+      ${insights.map(i => `
+        <div class="insight-card">
+          <div class="insight-icon">${i.icon}</div>
+          <div class="insight-text">
+            <div class="title">${i.title}</div>
+            <div class="body">${i.body}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+    
+    <footer>
+      <span>lisdex tracker · dados pessoais</span>
+      <span>${total} registros · atualizado a cada acesso</span>
+    </footer>
+  `;
+  
+  // Renderiza gráficos e strip
+  renderMainChart(rows);
+  renderSonoChart(rows);
+  renderStrip(strip30);
+}
+
+// ─────────────────────────────────────────────────────────────
+// CORRELATION CARD
+// ─────────────────────────────────────────────────────────────
+function corrCard(title, val, desc, hint) {
+  if (!val) return `
+    <div class="corr-card">
+      <div class="corr-title">${title}</div>
+      <div class="corr-value corr-neutral">--</div>
+      <div class="corr-desc">${desc} <em>Dados insuficientes.</em></div>
+    </div>
+  `;
+  
+  const v = parseFloat(val);
+  const strength = Math.abs(v) < 0.2 ? 'fraca' : Math.abs(v) < 0.5 ? 'moderada' : 'forte';
+  const cls = v > 0.1 ? 'corr-positive' : v < -0.1 ? 'corr-negative' : 'corr-neutral';
+  
+  return `
+    <div class="corr-card">
+      <div class="corr-title">${title}</div>
+      <div class="corr-value ${cls}">${v > 0 ? '+' : ''}${val}</div>
+      <div class="corr-desc">${desc} Correlação ${strength}. ${hint}</div>
+    </div>
+  `;
+}
+
+// ─────────────────────────────────────────────────────────────
+// INSIGHTS AUTOMÁTICOS
+// ─────────────────────────────────────────────────────────────
+function reboteMedia(rows) {
+  const pares = rows.filter(r => parseFloat(r.basal_humor) && parseFloat(r.off_humor));
+  if (!pares.length) return null;
+  const diffs = pares.map(r => parseFloat(r.off_humor) - parseFloat(r.basal_humor));
+  return diffs.reduce((a,b)=>a+b,0)/diffs.length;
+}
+
+function gerarInsights(rows, corrSonoFoco, corrAlcoolSono, corrSonoAnsied, rebote, tendFoco) {
+  const ins = [];
+  const mediaFoco = calcMedias(rows, 'pico_foco', null);
+  const mediaAnsied = calcMedias(rows, 'pico_ansiedade', null);
+  const mediaSono = calcMedias(rows, 'sono_duracao_h', null);
+  const mediaCafe = calcMedias(rows, 'cafe_qtd', null);
+  
+  if (corrSonoFoco && parseFloat(corrSonoFoco) > 0.4) {
+    ins.push({ icon: '😴', title: 'Sono é preditor de foco', body: `Correlação sono→foco de ${corrSonoFoco}. Seus dias de melhor foco tendem a ocorrer após noites melhores. Priorize o sono.` });
+  }
+  
+  if (corrAlcoolSono && parseFloat(corrAlcoolSono) < -0.3) {
+    ins.push({ icon: '🍺', title: 'Álcool prejudica seu sono', body: `Correlação álcool→sono de ${corrAlcoolSono}. Noites com álcool resultam em sono de qualidade menor nos seus dados.` });
+  }
+  
+  if (rebote !== null && rebote < -0.5) {
+    ins.push({ icon: '📉', title: `Crash de humor detectado`, body: `Diferença média basal→off de ${rebote.toFixed(2)}. Há queda consistente de humor ao final do efeito. Considere discutir com seu médico.` });
+  } else if (rebote !== null && rebote > 0.3) {
+    ins.push({ icon: '📈', title: 'Humor melhora ao longo do dia', body: `Diferença média basal→off de +${rebote.toFixed(2)}. Seu humor tende a melhorar depois da dose — sinal positivo.` });
+  }
+  
+  if (tendFoco > 0.05) {
+    ins.push({ icon: '↑', title: 'Foco em tendência de alta', body: 'Nos últimos 14 registros, o foco está melhorando progressivamente. Bom sinal de resposta ao tratamento.' });
+  } else if (tendFoco < -0.08) {
+    ins.push({ icon: '↓', title: 'Foco em tendência de queda', body: 'Foco caindo nos últimos 14 registros. Pode indicar tolerância, mudança de dose, ou variáveis externas (sono, estresse).' });
+  }
+  
+  if (mediaAnsied && mediaAnsied > 3.2) {
+    ins.push({ icon: '⚠', title: 'Ansiedade elevada em média', body: `Média de ansiedade ${mediaAnsied.toFixed(1)}/5. Valores consistentemente acima de 3 merecem atenção — discuta com seu médico.` });
+  }
+  
+  if (mediaSono && mediaSono < 6) {
+    ins.push({ icon: '🔴', title: 'Sono cronicamente curto', body: `Média de ${mediaSono.toFixed(1)}h de sono. Menos de 6h é uma variável de confusão importante para quase todas as métricas.` });
+  }
+  
+  if (ins.length === 0) {
+    ins.push({ icon: '📊', title: 'Dados insuficientes para insights', body: 'Continue registrando. Com mais de 14 entradas os padrões começam a emergir.' });
+  }
+  
+  return ins;
+}
+
+// ─────────────────────────────────────────────────────────────
+// CHARTS
+// ─────────────────────────────────────────────────────────────
+function renderMainChart(rows) {
+  const canvas = document.getElementById('mainChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  
+  const dados = rows.slice(-30);
+  const W = canvas.offsetWidth || 700;
+  canvas.width = W; canvas.height = 220;
+  
+  const pad = { top: 20, right: 16, bottom: 28, left: 28 };
+  const w = W - pad.left - pad.right;
+  const h = 220 - pad.top - pad.bottom;
+  const n = dados.length;
+  if (!n) return;
+  
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, W, 220);
+  
+  // Grid
+  ctx.strokeStyle = '#e8e8e0'; ctx.lineWidth = 1;
+  [1,2,3,4,5].forEach(v => {
+    const y = pad.top + h - (v/5)*h;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left+w, y); ctx.stroke();
+    ctx.fillStyle = '#c0c0b8'; ctx.font = '9px Syne Mono';
+    ctx.fillText(v, 4, y+3);
+  });
+  
+  const xOf = i => pad.left + (n > 1 ? (i/(n-1))*w : w/2);
+  const yOf = v => v ? pad.top + h - ((v/5)*h) : null;
+  
+  const linhas = [
+    { key: 'pico_foco', color: '#1a1a18', label: 'foco' },
+    { key: 'pico_clareza', color: '#5b5bf6', label: 'clareza' },
+    { key: 'pico_ansiedade', color: '#dc2626', label: 'ansiedade' },
+  ];
+  
+  linhas.forEach(({ key, color }) => {
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+    ctx.beginPath(); let s = false;
+    dados.forEach((d, i) => {
+      const y = yOf(parseFloat(d[key]));
+      if (!y) return;
+      if (!s) { ctx.moveTo(xOf(i), y); s=true; } else ctx.lineTo(xOf(i), y);
+    });
+    ctx.stroke();
+  });
+  
+  // Labels X
+  ctx.fillStyle = '#8a8a80'; ctx.font = '9px Syne Mono';
+  const step = Math.ceil(n/7);
+  dados.forEach((d, i) => {
+    if (i % step !== 0 && i !== n-1) return;
+    const dt = new Date(d.dose_data || d.timestamp_registro);
+    const lbl = isNaN(dt) ? '?' : `${dt.getDate()}/${dt.getMonth()+1}`;
+    ctx.fillText(lbl, xOf(i)-10, 220-8);
+  });
+  
+  // Legenda
+  linhas.forEach((l, i) => {
+    ctx.fillStyle = l.color;
+    ctx.fillRect(pad.left + i*80, 4, 14, 3);
+    ctx.fillStyle = '#8a8a80';
+    ctx.fillText(l.label, pad.left + i*80 + 18, 9);
+  });
+}
+
+function renderSonoChart(rows) {
+  const canvas = document.getElementById('sonoChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  
+  const dados = rows.slice(-20);
+  const W = canvas.offsetWidth || 320;
+  canvas.width = W; canvas.height = 220;
+  
+  const pad = { top: 20, right: 12, bottom: 28, left: 28 };
+  const w = W - pad.left - pad.right;
+  const h = 220 - pad.top - pad.bottom;
+  const n = dados.length;
+  if (!n) return;
+  
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, W, 220);
+  
+  ctx.strokeStyle = '#e8e8e0'; ctx.lineWidth = 1;
+  [1,2,3,4,5].forEach(v => {
+    const y = pad.top + h - (v/5)*h;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left+w, y); ctx.stroke();
+    ctx.fillStyle = '#c0c0b8'; ctx.font = '9px Syne Mono';
+    ctx.fillText(v, 4, y+3);
+  });
+  
+  const xOf = i => pad.left + (n > 1 ? (i/(n-1))*w : w/2);
+  
+  const linhas = [
+    { key: 'sono_qualidade', color: '#7c3aed', max: 5 },
+    { key: 'nota_dia_geral', color: '#16a34a', max: 10 },
+  ];
+  
+  linhas.forEach(({ key, color, max }) => {
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+    ctx.beginPath(); let s = false;
+    dados.forEach((d, i) => {
+      const v = parseFloat(d[key]);
+      if (isNaN(v) || !v) return;
+      const y = pad.top + h - ((v/max)*h);
+      if (!s) { ctx.moveTo(xOf(i), y); s=true; } else ctx.lineTo(xOf(i), y);
+    });
+    ctx.stroke();
+  });
+  
+  ctx.fillStyle = '#7c3aed'; ctx.fillRect(pad.left, 4, 12, 3);
+  ctx.fillStyle = '#8a8a80'; ctx.font = '9px Syne Mono'; ctx.fillText('sono', pad.left+16, 9);
+  ctx.fillStyle = '#16a34a'; ctx.fillRect(pad.left+55, 4, 12, 3);
+  ctx.fillText('nota', pad.left+71, 9);
+}
+
+function renderStrip(dados) {
+  const el = document.getElementById('stripSection');
+  if (!el || !dados.length) return;
+  
+  const campos = [
+    { key: 'pico_foco', label: 'foco', max: 5, inv: false },
+    { key: 'pico_clareza', label: 'clareza', max: 5, inv: false },
+    { key: 'pico_ansiedade', label: 'ansied.', max: 5, inv: true },
+    { key: 'sono_qualidade', label: 'sono', max: 5, inv: false },
+    { key: 'nota_dia_geral', label: 'nota dia', max: 10, inv: false },
+  ];
+  
+  const colorScale = (v, max, inv) => {
+    if (!v || isNaN(v)) return '#e8e8e0';
+    const ratio = v / max;
+    const r = inv ? ratio : 1 - ratio;
+    const g = inv ? 1 - ratio : ratio;
+    const rr = Math.round(220 * r + 34 * (1-r));
+    const gg = Math.round(34 * r + 197 * (1-r));
+    return `rgb(${rr},${gg},80)`;
+  };
+  
+  el.innerHTML = campos.map(c => `
+    <div class="strip-row">
+      <div class="strip-label">${c.label}</div>
+      <div class="strip-bars">
+        ${dados.map(d => {
+          const v = parseFloat(d[c.key]);
+          const dt = new Date(d.dose_data || d.timestamp_registro);
+          const lbl = isNaN(dt) ? d.dose_data : `${dt.getDate()}/${dt.getMonth()+1}: ${v || '--'}`;
+          return `<div class="strip-bar" 
+            style="background:${colorScale(v, c.max, c.inv)}"
+            data-tooltip="${lbl}"
+          ></div>`;
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─────────────────────────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────────────────────────
+carregarCSV();
+</script>
+</body>
+</html>
